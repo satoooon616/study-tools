@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIS-ITSM 模擬試験 | ServiceNow</title>
+  <style>
+    :root {
+      --sn-purple: #6B2D8B;
+      --sn-purple-light: #8B3FB5;
+      --sn-purple-dark: #4A1F61;
+      --sn-gray-bg: #f0f0f0;
+      --sn-gray-card: #ffffff;
+      --sn-gray-border: #d0d0d7;
+      --sn-gray-text: #293949;
+      --sn-gray-muted: #606060;
+      --sn-green: #0a8f4d;
+      --sn-red: #c4001d;
+      --sn-yellow: #e69900;
+      --sn-blue: #0054a6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background: var(--sn-gray-bg);
+      color: var(--sn-gray-text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--sn-purple-dark);
+      color: #fff;
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+    header .badge {
+      background: var(--sn-purple-light);
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* CONTAINER */
+    .container { max-width: 840px; margin: 36px auto; padding: 0 16px; }
+
+    /* CARD */
+    .card {
+      background: var(--sn-gray-card);
+      border: 1px solid var(--sn-gray-border);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* START SCREEN */
+    #start-screen h1 { font-size: 26px; font-weight: 700; color: var(--sn-purple-dark); margin-bottom: 8px; }
+    #start-screen .subtitle { color: var(--sn-gray-muted); font-size: 14px; margin-bottom: 24px; }
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    .info-item { border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 16px; text-align: center; }
+    .info-item .num { font-size: 28px; font-weight: 700; color: var(--sn-purple); }
+    .info-item .label { font-size: 13px; color: var(--sn-gray-muted); margin-top: 4px; }
+
+    /* QUIZ SCREEN */
+    #quiz-screen { display: none; }
+    .progress-bar-wrap { background: #e0e0e8; border-radius: 4px; height: 6px; margin-bottom: 20px; overflow: hidden; }
+    .progress-bar-fill { background: var(--sn-purple); height: 100%; transition: width 0.3s ease; }
+    .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .q-counter { font-size: 13px; color: var(--sn-gray-muted); font-weight: 600; }
+    .q-category { background: var(--sn-purple-dark); color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 12px; }
+    .q-text { font-size: 17px; font-weight: 600; line-height: 1.6; margin-bottom: 24px; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option {
+      border: 2px solid var(--sn-gray-border);
+      border-radius: 6px;
+      padding: 14px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 15px;
+    }
+    .option:hover:not(.disabled) { border-color: var(--sn-purple-light); background: #f5eeff; }
+    .option .opt-letter {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--sn-gray-border);
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .option.correct { border-color: var(--sn-green); background: #edfff5; }
+    .option.correct .opt-letter { background: var(--sn-green); border-color: var(--sn-green); color: #fff; }
+    .option.wrong { border-color: var(--sn-red); background: #fff0f2; }
+    .option.wrong .opt-letter { background: var(--sn-red); border-color: var(--sn-red); color: #fff; }
+    .option.show-correct { border-color: var(--sn-green); background: #edfff5; }
+    .option.show-correct .opt-letter { background: var(--sn-green); border-color: var(--sn-green); color: #fff; }
+    .option.disabled { cursor: default; }
+
+    .explanation-box {
+      display: none; margin-top: 20px; padding: 16px; border-radius: 6px;
+      border-left: 4px solid var(--sn-blue); background: #f0f6ff;
+      font-size: 14px; line-height: 1.7;
+    }
+    .explanation-box .exp-title { font-weight: 700; color: var(--sn-blue); margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .quiz-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 8px; }
+    .quiz-actions-right { display: flex; gap: 8px; }
+
+    /* BUTTONS */
+    .btn { padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background 0.15s, opacity 0.15s; }
+    .btn-primary { background: var(--sn-purple); color: #fff; }
+    .btn-primary:hover { background: var(--sn-purple-light); }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    .btn-secondary { background: transparent; color: var(--sn-purple); border: 2px solid var(--sn-purple); }
+    .btn-secondary:hover:not(:disabled) { background: #f5eeff; }
+    .btn-secondary:disabled { opacity: 0.4; cursor: default; }
+    .btn-ghost { background: transparent; color: var(--sn-gray-muted); border: 2px solid var(--sn-gray-border); }
+    .btn-ghost:hover { background: #f5f5f5; }
+
+    /* RESULT SCREEN */
+    #result-screen { display: none; }
+    .result-header { text-align: center; padding-bottom: 24px; border-bottom: 1px solid var(--sn-gray-border); margin-bottom: 28px; }
+    .score-circle {
+      width: 120px; height: 120px; border-radius: 50%;
+      border: 6px solid var(--sn-purple);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .score-circle .score-num { font-size: 32px; font-weight: 800; color: var(--sn-purple); line-height: 1; }
+    .score-circle .score-label { font-size: 12px; color: var(--sn-gray-muted); }
+    .result-header h2 { font-size: 22px; font-weight: 700; }
+    .pass-badge { display: inline-block; margin-top: 8px; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+    .pass-badge.pass { background: #d4f5e5; color: var(--sn-green); }
+    .pass-badge.fail { background: #ffd9de; color: var(--sn-red); }
+    .stat-row { display: flex; gap: 12px; margin-bottom: 28px; }
+    .stat-box { flex: 1; border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 16px; text-align: center; }
+    .stat-box .stat-num { font-size: 24px; font-weight: 700; }
+    .stat-box .stat-label { font-size: 12px; color: var(--sn-gray-muted); margin-top: 4px; }
+    .stat-box.green .stat-num { color: var(--sn-green); }
+    .stat-box.red .stat-num { color: var(--sn-red); }
+    .stat-box.blue .stat-num { color: var(--sn-blue); }
+    .result-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+
+    /* REVIEW */
+    .review-section h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: var(--sn-purple-dark); border-bottom: 2px solid var(--sn-purple); padding-bottom: 8px; }
+    .review-item { border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 18px; margin-bottom: 14px; }
+    .review-item .review-q-num { font-size: 12px; font-weight: 700; color: var(--sn-purple); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .review-item .review-q-text { font-size: 15px; font-weight: 600; margin-bottom: 12px; line-height: 1.5; }
+    .review-answer { font-size: 14px; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; }
+    .review-answer.your { background: #fff0f2; border-left: 3px solid var(--sn-red); }
+    .review-answer.correct { background: #edfff5; border-left: 3px solid var(--sn-green); }
+    .review-exp { margin-top: 10px; font-size: 13px; color: var(--sn-gray-muted); line-height: 1.6; padding: 10px 12px; background: #f8f8fa; border-radius: 4px; }
+
+    @media (max-width: 600px) {
+      .card { padding: 20px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .stat-row { flex-direction: column; }
+      .btn { padding: 10px 16px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">ServiceNow</span>
+  <span class="badge">CIS-ITSM 模擬試験</span>
+</header>
+
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div class="card" id="start-screen">
+    <h1>CIS-ITSM 認定試験 模擬問題</h1>
+    <p class="subtitle">Certified Implementation Specialist – IT Service Management</p>
+    <div class="info-grid">
+      <div class="info-item"><div class="num">100</div><div class="label">問題バンク</div></div>
+      <div class="info-item"><div class="num">40</div><div class="label">出題数（ランダム）</div></div>
+      <div class="info-item"><div class="num">65%</div><div class="label">合格ライン</div></div>
+    </div>
+    <p style="font-size:14px;color:var(--sn-gray-muted);margin-bottom:24px;line-height:1.7;">
+      100問のバンクから毎回40問をランダム抽出して出題します。<br>
+      インシデント・問題・変更・要求・ナレッジ・SLA・サービスポータル・フローデザイナーなど主要トピックを網羅しています。
+    </p>
+    <button class="btn btn-primary" onclick="startQuiz()" style="font-size:15px;padding:12px 32px;">試験を開始する →</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="card" id="quiz-screen">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="q-meta">
+      <span class="q-counter" id="q-counter">問題 1 / 40</span>
+      <span class="q-category" id="q-category">Incident Management</span>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options-container"></div>
+    <div class="explanation-box" id="explanation-box">
+      <div class="exp-title">解説</div>
+      <div id="explanation-text"></div>
+    </div>
+    <div class="quiz-actions">
+      <button class="btn btn-ghost" onclick="confirmAbort()">中断する</button>
+      <div class="quiz-actions-right">
+        <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()" disabled>← 前の問題</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>次の問題 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="card" id="result-screen">
+    <div class="result-header">
+      <div class="score-circle">
+        <span class="score-num" id="score-pct">0%</span>
+        <span class="score-label">正解率</span>
+      </div>
+      <h2 id="result-title">結果</h2>
+      <span class="pass-badge" id="pass-badge"></span>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box green"><div class="stat-num" id="stat-correct">0</div><div class="stat-label">正解</div></div>
+      <div class="stat-box red"><div class="stat-num" id="stat-wrong">0</div><div class="stat-label">不正解</div></div>
+      <div class="stat-box blue"><div class="stat-num" id="stat-total">40</div><div class="stat-label">総問題数</div></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-primary" onclick="restartQuiz()">もう一度挑戦</button>
+      <button class="btn btn-secondary" onclick="reviewWrong()">間違えた問題を復習</button>
+      <button class="btn btn-ghost" onclick="showStart()">トップに戻る</button>
+    </div>
+    <div class="review-section" id="review-section" style="display:none;">
+      <h3>間違えた問題の復習（<span id="wrong-count">0</span>問）</h3>
+      <div id="review-items"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  問題バンク（100問）
+// ============================================================
+const questions = [
+
+  // ========== Incident Management（インシデント管理）15問 ==========
+  {
+    category: "Incident Management",
+    text: "ServiceNowにおいてインシデントのライフサイクルとして正しい順序はどれですか？",
+    options: ["New → In Progress → Resolved → Closed","New → Resolved → In Progress → Closed","Open → Assigned → Closed → Resolved","New → On Hold → Resolved → Closed"],
+    answer: 0,
+    explanation: "インシデントのライフサイクルは New（新規）→ In Progress（対応中）→ Resolved（解決済み）→ Closed（クローズ）の順です。Resolved状態ではユーザーによる確認期間があり、一定期間後に自動的にClosedになります。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントのPriority（優先度）はどのように計算されますか？",
+    options: ["Impact + Urgency の合計値","Impact × Urgency のマトリクスにより決定","担当者が手動で設定する","インシデントのカテゴリによって自動決定"],
+    answer: 1,
+    explanation: "インシデントのPriorityはImpact（影響度）とUrgency（緊急度）のマトリクスにより自動計算されます。例えばImpact=1（High）、Urgency=1（High）の場合はP1（Critical）となります。PriorityはImpactとUrgencyから派生する値です。"
+  },
+  {
+    category: "Incident Management",
+    text: "Assignment Groupがインシデントに設定された場合、次に期待される動作はどれですか？",
+    options: ["インシデントが自動的にResolvedになる","グループ内の担当者（Assigned to）が設定または通知される","インシデントのPriorityがP1に変更される","インシデントが自動的にCloseされる"],
+    answer: 1,
+    explanation: "Assignment Groupにグループが設定されると、そのグループのメンバーへの通知や、自動割り当てルール（Assignment Rules）によって特定の担当者（Assigned to）が設定されます。グループは部門やスキルセットを表します。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントに紐づいたSLAが「Breached（違反）」になる条件はどれですか？",
+    options: ["インシデントが担当者に割り当てられていない場合","SLAで定義された期限内にインシデントが解決されなかった場合","インシデントにコメントが追加された場合","インシデントのPriorityが変更された場合"],
+    answer: 1,
+    explanation: "SLA Breachは、SLAで定義された解決期限（またはレスポンス期限）までにインシデントが指定のステータスに達しなかった場合に発生します。BreachはSLAレポートや指標に反映され、改善活動のトリガーとなります。"
+  },
+  {
+    category: "Incident Management",
+    text: "「Major Incident（重大インシデント）」の管理として正しいのはどれですか？",
+    options: ["Major Incidentは通常のインシデントと同じプロセスで管理される","Major Incidentは専用のワークフローを持ち、インシデントマネージャーが調整役として対応する","Major IncidentはP3以上のインシデントに自動適用される","Major IncidentはChange Managementに自動エスカレーションされる"],
+    answer: 1,
+    explanation: "Major Incident（重大インシデント）は、ビジネスへの影響が非常に大きいP1インシデントに適用される特別な管理プロセスです。インシデントマネージャーが調整役を担い、定期的なステータス更新、専用のコミュニケーション、根本原因調査（PIR）が実施されます。"
+  },
+  {
+    category: "Incident Management",
+    text: "ResolvedになったインシデントをReopen（再オープン）できる条件として正しいのはどれですか？",
+    options: ["インシデントがClosedでないこと、またはClose Protection設定による","インシデントが作成から7日以内であること","インシデントのPriorityがP1またはP2であること","インシデントに添付ファイルがないこと"],
+    answer: 0,
+    explanation: "インシデントのReopenは、インシデントがClosed状態になる前（Resolved中）であれば可能です。一度Closedになると通常は再オープンできませんが、Close Protection設定やビジネスルールによって制御されます。ReopenするとステータスがIn Progressに戻ります。"
+  },
+  {
+    category: "Incident Management",
+    text: "「Parent/Child Incident（親子インシデント）」を使用するシナリオとして最も適切なのはどれですか？",
+    options: ["1つのインシデントを複数の担当者に割り当てる場合","同じ根本原因を持つ複数のインシデントをグループ化して管理する場合","インシデントをProblemレコードに変換する場合","インシデントを別のAssignment Groupに転送する場合"],
+    answer: 1,
+    explanation: "Parent/Child Incident構造は、同じ根本原因（例：サーバーダウン）から発生した複数のインシデントをグループ化する際に使用します。親インシデントを解決すると子インシデントも一括解決できるため、管理効率が向上します。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントのAssignment Rulesが機能するタイミングはいつですか？",
+    options: ["インシデントがClosedになった時","インシデントが作成または更新された時に、条件に一致するルールが適用される","毎日深夜0時に一括処理される","担当者が手動でトリガーした時のみ"],
+    answer: 1,
+    explanation: "Assignment Rulesは、インシデントが作成・更新されたタイミングで自動的に評価されます。設定された条件（カテゴリ、CI、場所など）に一致した場合、Assignment GroupやAssigned toが自動設定されます。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントの「On Hold」ステータスで使用するOn Hold Reasonとして正しいのはどれですか？",
+    options: ["Awaiting Caller、Awaiting Problem、Awaiting Change、Awaiting Vendor","Pending、Active、Inactive、Suspended","Low、Medium、High、Critical","Draft、Review、Approved、Rejected"],
+    answer: 0,
+    explanation: "On Hold時のReasonには「Awaiting Caller（発信者待ち）」「Awaiting Problem（問題管理待ち）」「Awaiting Change（変更管理待ち）」「Awaiting Vendor（ベンダー待ち）」などがあります。この期間はSLAタイマーが一時停止（Pause）されます。"
+  },
+  {
+    category: "Incident Management",
+    text: "ServiceNowでインシデントに関連するCIを記録する主なフィールドはどれですか？",
+    options: ["Business Service フィールド","Configuration Item（CI）フィールド","Category フィールド","Subcategory フィールド"],
+    answer: 1,
+    explanation: "インシデントのConfiguration Item（CI）フィールドには、インシデントの影響を受けているITコンポーネント（サーバー、アプリケーション等）を記録します。CIを指定することで、CMDBからの影響分析やSLA計算に活用できます。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントの「Resolution Code」として使用される値として正しい組み合わせはどれですか？",
+    options: ["Solved（Permanently）、Solved（Workaround）、Not Solved、Closed/Resolved by Caller","Fixed、Not Fixed、Duplicate、Cannot Reproduce のみ","P1、P2、P3、P4","New、Open、Closed のみ"],
+    answer: 0,
+    explanation: "Resolution Codeは解決方法を分類します。「Solved（Permanently）」は恒久解決、「Solved（Workaround）」は暫定対応、「Not Solved」は解決できなかった場合、「Closed/Resolved by Caller」はユーザー自身が解決した場合に使用します。"
+  },
+  {
+    category: "Incident Management",
+    text: "ServiceNow ITSM において「Incident Alert」機能の主な目的はどれですか？",
+    options: ["インシデントのPriorityを自動変更する","大規模障害時に影響を受ける可能性があるユーザーに対して一括通知を送信する","インシデントを自動的に解決する","SLAの期限を延長する"],
+    answer: 1,
+    explanation: "Incident Alert（インシデントアラート）は、Major Incidentや広範囲な障害が発生した際に、影響を受ける可能性があるユーザーグループに対してメールや通知を一括送信する機能です。問い合わせの集中を防ぎ、状況を早期に周知できます。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントの「Contact Type」フィールドに記録される情報はどれですか？",
+    options: ["インシデントを報告した担当者の連絡先メールアドレス","インシデントがどのチャネル（電話、メール、セルフサービス等）で報告されたか","インシデントのカテゴリと優先度","インシデントの解決方法"],
+    answer: 1,
+    explanation: "Contact Typeはインシデントがどの受付チャネルで報告されたかを記録します（Phone、Email、Self-Service Portal、Walk-inなど）。このデータはチャネル別分析やリソース最適化に活用されます。"
+  },
+  {
+    category: "Incident Management",
+    text: "インシデントを「Problem（問題）」に昇格させる際の操作として正しいのはどれですか？",
+    options: ["インシデントフォームの「Create Problem」ボタンをクリックし、関連Problemレコードを作成する","インシデントのステータスをProblemに変更する","インシデントを削除してProblemとして再登録する","インシデントのカテゴリをProblemに設定する"],
+    answer: 0,
+    explanation: "インシデントからProblemへの昇格は、インシデントフォーム上の「Create Problem」（または「Promote to Problem」）ボタンを使用します。作成されたProblemレコードにはインシデントとのRelationshipが自動設定されます。"
+  },
+  {
+    category: "Incident Management",
+    text: "「Incident Closure」時に必須となる情報として正しい組み合わせはどれですか？",
+    options: ["Close Notes と Resolution Code が必須となるケースが多い","SLAのステータスのみ","インシデントのPriorityとCategory","担当者のデジタル署名"],
+    answer: 0,
+    explanation: "インシデントCloseには通常、Close Notes（クローズメモ：解決内容の詳細）とResolution Code（解決コード）の入力が必須設定されています。これらはナレッジ作成の参考資料となり、類似インシデントの再発防止に役立ちます。"
+  },
+
+  // ========== Problem Management（問題管理）10問 ==========
+  {
+    category: "Problem Management",
+    text: "「Problem（問題）」と「Incident（インシデント）」の主な違いはどれですか？",
+    options: ["ProblemはP1インシデントのみから作成される","ProblemはITサービスの中断の根本原因を特定・排除することを目的とし、Incidentはサービスの迅速な復旧を目的とする","ProblemはユーザーがService Portalから直接登録できる","ProblemはIncidentと同じワークフローを使用する"],
+    answer: 1,
+    explanation: "IncidetはITサービスの迅速な復旧（回復）を目的とし、ProblemはITサービス中断の根本原因（Root Cause）を特定して恒久的に排除することを目的とします。ITILではこれらを別プロセスとして明確に区別しています。"
+  },
+  {
+    category: "Problem Management",
+    text: "Root Cause Analysis（RCA）が完了した際にProblemレコードに記録される内容として正しいのはどれですか？",
+    options: ["インシデントの件数とSLA違反率","根本原因（Root Cause）、回避策（Workaround）、恒久対策（Fix）","変更要求（RFC）の承認状況","担当者の作業時間ログ"],
+    answer: 1,
+    explanation: "RCA完了後にProblemレコードには、特定した根本原因（Root Cause）、一時的な回避策（Workaround）、根本原因を解消する恒久対策（Permanent Fix）が記録されます。これらはKEDB（Known Error Database）への登録にも使用されます。"
+  },
+  {
+    category: "Problem Management",
+    text: "「Known Error Database（KEDB）」に登録されるのはどのような情報ですか？",
+    options: ["未解決のインシデント一覧","根本原因が特定され、暫定的な回避策が存在するがまだ恒久対策が実施されていない既知の問題","解決済みのProblemのアーカイブ","変更管理の失敗記録"],
+    answer: 1,
+    explanation: "KEDBには「Known Error（既知のエラー）」が登録されます。既知のエラーとは根本原因が特定され、回避策（Workaround）が文書化されているがまだ恒久対策が完了していない問題です。サービスデスクはKEDBを参照してインシデントを迅速に解決できます。"
+  },
+  {
+    category: "Problem Management",
+    text: "Problemレコードのステータス「Known Error」とはどういう意味ですか？",
+    options: ["Problemの調査が開始されていない状態","根本原因が特定され、回避策が文書化された状態","Problemが解決され、クローズ待ちの状態","Problemが重複として却下された状態"],
+    answer: 1,
+    explanation: "Problem状態「Known Error」は、根本原因の調査（RCA）が完了して根本原因が特定され、回避策（Workaround）が文書化されたことを意味します。Known Error状態になるとKEDBに登録され、サービスデスクが参照できるようになります。"
+  },
+  {
+    category: "Problem Management",
+    text: "「Workaround（回避策）」と「Permanent Fix（恒久対策）」の違いとして正しいのはどれですか？",
+    options: ["WorkaroundはP1のみ、Permanent FixはP2以下に適用される","Workaroundは根本原因を解消せずに症状を軽減する一時的な対応で、Permanent Fixは根本原因を完全に排除する対応","WorkaroundはChange Managementを経由せず、Permanent FixはCABの承認が必要","WorkaroundはServiceNowのChange Templateとして登録される"],
+    answer: 1,
+    explanation: "Workaroundは根本原因を解消せずに症状を回避・軽減する一時的な手順です。Permanent Fixは根本原因を完全に取り除く恒久的な対策で、通常はChange Management（変更管理）を通じて実施されます。"
+  },
+  {
+    category: "Problem Management",
+    text: "Problemレコードの標準的なワークフローとして正しい順序はどれですか？",
+    options: ["Open → Root Cause Analysis → Known Error → Fix in Progress → Resolved → Closed","New → Assigned → Closed のみ","Open → Workaround → Resolved のみ","RCA → Incident → Change → Closed"],
+    answer: 0,
+    explanation: "Problemの標準ワークフローはOpen（オープン）→ Root Cause Analysis（RCA中）→ Known Error（既知エラー登録）→ Fix in Progress（恒久対策実施中）→ Resolved（解決）→ Closed（クローズ）の順です。"
+  },
+  {
+    category: "Problem Management",
+    text: "Problem ManagementでChange Managementと連携する主な目的はどれですか？",
+    options: ["インシデントを自動的にCloseするため","Problemの恒久対策（Permanent Fix）を安全に実施するためのRFC（Request for Change）を発行するため","ProblemのSLAタイマーを停止するため","ProblemをKnowledge Articleに変換するため"],
+    answer: 1,
+    explanation: "Problemの恒久対策はシステムへの変更を伴うことが多いため、Change Managementを通じてRFC（Request for Change）を発行し、適切なリスク評価と承認を経て安全に実施します。ProblemとChangeレコードはRelationshipで紐づけられます。"
+  },
+  {
+    category: "Problem Management",
+    text: "「Proactive Problem Management（プロアクティブ問題管理）」の説明として正しいのはどれですか？",
+    options: ["インシデントが発生した後にProblemを作成する事後対応型の問題管理","インシデントが発生する前にトレンド分析等から潜在的な問題を発見し予防的に対処する問題管理","P1インシデントのみを対象とする特別な問題管理プロセス","自動化されたProblem作成プロセス"],
+    answer: 1,
+    explanation: "Proactive Problem Managementは、インシデントが発生する前にトレンド分析、インフラ監視データ、定期的なレビューから潜在的な問題を発見し、事前に根本原因を排除してサービス品質を向上させる先手の取り組みです。"
+  },
+  {
+    category: "Problem Management",
+    text: "Problemが「Resolved（解決済み）」となる条件はどれですか？",
+    options: ["Problemに関連するすべてのインシデントがCloseされた場合","恒久対策（Permanent Fix）が実施・確認され、根本原因が排除されたと判断された場合","Problemのオープンから90日が経過した場合","Problem担当者がResolvedに手動変更した場合のみ"],
+    answer: 1,
+    explanation: "ProblemがResolved（解決済み）になるのは、恒久対策（Permanent Fix）が適切に実施され、根本原因が排除されたことが確認された場合です。その後、一定期間の確認期間を経てClosedになります。"
+  },
+  {
+    category: "Problem Management",
+    text: "「Post-Incident Review（PIR）」が主に実施されるタイミングとしてあるのはどれですか？",
+    options: ["すべてのP3インシデントのCloseafter","Major Incident（重大インシデント、通常P1）の解決後に実施される事後レビュー","月次のインシデント統計レポート作成時","新しいIT担当者が着任した際"],
+    answer: 1,
+    explanation: "PIR（Post-Incident Review、事後レビュー）は主にMajor Incident（P1）の解決後に実施されます。インシデントのタイムライン、影響、対応の効果、再発防止策を振り返り、Problem Managementにインプットとして提供されます。"
+  },
+
+  // ========== Change Management（変更管理）15問 ==========
+  {
+    category: "Change Management",
+    text: "「Standard Change（標準変更）」の特徴として正しいのはどれですか？",
+    options: ["CABの承認が毎回必要な変更","事前に承認・文書化された低リスクの定型変更で、個別の承認なしに実施できる","緊急度が高い予定外の変更","ビジネス要件の大規模な変更"],
+    answer: 1,
+    explanation: "Standard Changeは事前にリスク評価・承認済みの定型的な変更（例：定期パッチ適用、パスワードリセット手順）です。Standard Change Templateとして登録されており、個別のCAB承認なしで実施できます。低リスク・高頻度の変更に適しています。"
+  },
+  {
+    category: "Change Management",
+    text: "「Emergency Change（緊急変更）」に関する説明として正しいのはどれですか？",
+    options: ["Standard Changeより低リスクな変更","重大なインシデントを解決するために通常プロセスを簡略化して緊急実施する変更","すべての変更の中で最も時間がかかる変更","CABの承認が不要な変更"],
+    answer: 1,
+    explanation: "Emergency Changeは、進行中の重大インシデント（P1/P2）を解決するために通常の承認プロセスを短縮・簡略化して実施する変更です。事後承認（ECAB: Emergency CAB）が行われることもあります。"
+  },
+  {
+    category: "Change Management",
+    text: "CAB（Change Advisory Board）の主な役割はどれですか？",
+    options: ["インシデントの担当者を割り当てる","Normal Changeのリスク評価と承認を行う委員会","SLAの期限を設定する","システムの自動バックアップを承認する"],
+    answer: 1,
+    explanation: "CAB（Change Advisory Board）はNormal Changeのリスク評価・承認を行う委員会です。IT部門、ビジネス代表者、技術専門家で構成され、変更の影響、リスク、実施計画を評価して承認可否を判断します。"
+  },
+  {
+    category: "Change Management",
+    text: "Normal Changeの標準的なワークフロー順序として正しいのはどれですか？",
+    options: ["New → Assess → Authorize → Scheduled → Implement → Review → Closed","New → Implement → Closed のみ","Request → Approve → Execute","Open → In Progress → Resolved → Closed"],
+    answer: 0,
+    explanation: "Normal Changeのワークフローは、New → Assess（評価）→ Authorize（承認）→ Scheduled（スケジュール）→ Implement（実施）→ Review（レビュー）→ Closed（クローズ）の順です。各ステージで適切な確認と承認が行われます。"
+  },
+  {
+    category: "Change Management",
+    text: "「Risk Assessment（リスク評価）」をChangeに対して実施する主な目的はどれですか？",
+    options: ["変更担当者のスキルレベルを評価する","変更実施に伴うリスクを定量化し、適切な承認レベルや緊急度を決定する","変更のコスト見積もりを自動計算する","インシデントのPriorityを決定する"],
+    answer: 1,
+    explanation: "Risk Assessmentは変更の実施前に潜在的なリスク（障害の可能性、影響範囲、ロールバックの容易さ等）を評価し定量化します。評価結果はRisk Score（リスクスコア）として表示され、必要な承認レベルや対策の検討に使用されます。"
+  },
+  {
+    category: "Change Management",
+    text: "「Conflict Detection（コンフリクト検出）」機能が検出するものはどれですか？",
+    options: ["変更申請書の記入漏れ","同じCI（設定項目）や同じ時間帯に重複する変更スケジュール","担当者のスキル不足","変更のコスト超過"],
+    answer: 1,
+    explanation: "Conflict Detection機能は、同一のCIに対して同じ時間帯に複数の変更が予定されている場合や、Maintenance Windowと重複している変更などのスケジュール競合を自動検出します。変更実施前の問題を未然に防ぎます。"
+  },
+  {
+    category: "Change Management",
+    text: "「Change Schedule（変更スケジュール）」と「Maintenance Window（メンテナンスウィンドウ）」の関係として正しいのはどれですか？",
+    options: ["両者は同じ機能を指す別名","Maintenance WindowはChange Scheduleの一部で、変更実施が許可される時間帯を定義する","Change ScheduleはSLA計算にのみ使用される","Maintenance WindowはP1インシデントにのみ適用される"],
+    answer: 1,
+    explanation: "Change Scheduleは変更管理に関連するスケジュール全般を管理します。Maintenance Windowはそのなかで「変更実施が許可される時間帯（例：毎週土曜2:00〜6:00）」を定義するものです。Conflict Detectionとも連携します。"
+  },
+  {
+    category: "Change Management",
+    text: "「Standard Change Template（標準変更テンプレート）」を使用する利点はどれですか？",
+    options: ["変更のコストを削減できる","承認済みの定型変更手順を再利用し、毎回の承認プロセスを省略できる","変更のリスクスコアが自動的に最低値になる","Emergency Changeとして自動分類される"],
+    answer: 1,
+    explanation: "Standard Change Templateは事前承認済みの変更手順をテンプレート化したものです。テンプレートから変更を作成すると個別のCAB承認が不要なため、変更リードタイムが大幅に短縮されます。低リスク・繰り返し実施する変更に適しています。"
+  },
+  {
+    category: "Change Management",
+    text: "変更の「Back-out Plan（ロールバック計画）」が重要な理由はどれですか？",
+    options: ["変更のコストを正確に見積もるため","変更実施後に問題が発生した場合、元の状態に戻すための手順を事前に準備しておくため","CABの承認を迅速化するため","インシデントのPriorityを決定するため"],
+    answer: 1,
+    explanation: "Back-out Plan（ロールバック計画）は、変更実施後に予期せぬ問題が発生した際に変更前の状態に戻すための手順書です。リスクを最小化するために変更計画と一緒に事前に策定・承認されます。"
+  },
+  {
+    category: "Change Management",
+    text: "「Change Implementation（実施）」フェーズ完了後に行われるReviewの主な目的はどれですか？",
+    options: ["変更のコストを請求するため","変更の実施結果を評価し、成功・失敗・改善点を文書化してナレッジとして蓄積するため","次の変更の計画を立案するため","変更担当者の評価を行うため"],
+    answer: 1,
+    explanation: "Post-implementation Reviewでは、変更が計画通りに実施されたか、目的を達成できたか、予期せぬ影響はなかったかを評価します。評価結果は変更管理プロセスの改善やStandard Change Templateの更新に活用されます。"
+  },
+  {
+    category: "Change Management",
+    text: "「Change Freeze（変更凍結）」期間中に適用されるルールはどれですか？",
+    options: ["すべての変更が自動承認される","定義された期間（例：年末年始）にすべての変更実施を禁止または制限する","Emergency Changeのみ実施可能","Standard Changeのみ実施可能"],
+    answer: 1,
+    explanation: "Change Freeze（変更凍結）は、ビジネス上の重要な期間（例：決算期、年末年始、大規模イベント）中の変更を禁止または厳しく制限するポリシーです。変更によるサービス障害リスクを避けるために適用されます。"
+  },
+  {
+    category: "Change Management",
+    text: "「Change Task（変更タスク）」の目的として正しいのはどれですか？",
+    options: ["変更をサービスカタログから依頼するための手順","単一のChangeレコードを複数の実施タスクに分割し、異なる担当者・チームに割り当てて管理する","変更のコスト明細を記録する","変更に関連するインシデントを追跡する"],
+    answer: 1,
+    explanation: "Change Taskは、複雑な変更を複数の実施タスク（サブタスク）に分割するための機能です。各タスクを異なる担当者・チームに割り当て、個別に進捗管理できます。すべてのTaskが完了すると変更のImplementationフェーズが完了します。"
+  },
+  {
+    category: "Change Management",
+    text: "「Change Impact（変更の影響範囲）」と「Change Risk（変更リスク）」の違いとして正しいのはどれですか？",
+    options: ["両方とも同じ概念を指す","Impactは変更が影響する範囲（ユーザー数、業務プロセス等）を表し、Riskは変更が失敗する可能性と影響の組み合わせを表す","Riskは変更コストを表し、Impactは変更期間を表す","Impactは担当者が手動設定し、Riskは自動計算される"],
+    answer: 1,
+    explanation: "Change Impactは変更によって影響を受ける範囲（業務、ユーザー数、CIの範囲など）を表します。Change Riskは変更が失敗する確率（Likelihood）とその影響（Impact）を組み合わせたリスクスコアです。両方とも承認判断の重要な指標です。"
+  },
+  {
+    category: "Change Management",
+    text: "Changeレコードの「Requested by」と「Assigned to」の違いはどれですか？",
+    options: ["両方とも変更の実施担当者を指す","Requested byは変更を依頼したユーザー/部門、Assigned toは変更の実施・管理担当者","Requested byはCABメンバー、Assigned toはインシデント担当者","両方とも自動設定されるフィールド"],
+    answer: 1,
+    explanation: "Requested byは変更を要求したユーザーまたは部門（変更の発起者）を記録します。Assigned toはその変更の実施・コーディネーションを担当するIT担当者を記録します。これらは別の人物になることが多いです。"
+  },
+  {
+    category: "Change Management",
+    text: "「Advisory vs Authoritative CAB（諮問CABと権威CAB）」に関する説明として正しいのはどれですか？",
+    options: ["Advisory CABは変更を拒否できるが、Authoritative CABはできない","Advisory CABは変更に関するアドバイスや推奨を提供し、Authoritative CABは正式な承認権限を持つ","両者はServiceNowでは区別されない","Advisory CABはP1インシデント専用",""],
+    answer: 1,
+    explanation: "Advisory CABは変更に関するアドバイス・意見・リスク評価を提供しますが最終決定権は別の権限者（Change Manager等）にあります。Authoritative CABは正式な承認権限を持ち、その承認がなければ変更は実施できません。"
+  },
+
+  // ========== Request Management / Service Catalog（要求管理・サービスカタログ）10問 ==========
+  {
+    category: "Request Management",
+    text: "ServiceNowにおいて「RITM（Requested Item）」とはどのようなレコードですか？",
+    options: ["サービスカタログから依頼された個別のアイテム（要求品目）を表すレコード","インシデントの自動チケット","変更要求の一種","Problemレコードのサブタイプ"],
+    answer: 0,
+    explanation: "RITM（sc_req_item）はサービスカタログからユーザーが注文した個別のアイテムを表すレコードです。Request（REQ）は注文全体を表し、1つのRequestに複数のRITMが含まれます。各RITMには実行タスク（SCTASK）が紐づきます。"
+  },
+  {
+    category: "Request Management",
+    text: "「Service Catalog Item」と「Record Producer」の違いとして正しいのはどれですか？",
+    options: ["両者は完全に同じ機能を提供する","Catalog Itemは注文可能な商品・サービスを提供し、Record ProducerはカタログUIから任意のテーブルにレコードを作成する","Record Producerはモバイルアプリ専用","Service Catalog Itemは管理者のみが作成できる"],
+    answer: 1,
+    explanation: "Service Catalog Itemはユーザーが注文（Request）できる商品やサービスを提供し、sc_req_itemレコードを生成します。Record Producerはカタログのインターフェースを使いながらINC、PRB、CHG等の任意のテーブルにレコードを作成できます。"
+  },
+  {
+    category: "Request Management",
+    text: "Catalog Variableの「Reference」タイプを使用する目的はどれですか？",
+    options: ["テキスト入力フィールドを作成する","別のServiceNowテーブルからレコードを参照・選択するルックアップフィールドを作成する","ファイルアップロードフィールドを作成する","日付選択フィールドを作成する"],
+    answer: 1,
+    explanation: "Variable TypeのReferenceは、別のServiceNowテーブル（例：User、CI、Location）からレコードを参照・選択するルックアップフィールドです。入力値の正確性を保証し、関連テーブルとの連携を実現します。"
+  },
+  {
+    category: "Request Management",
+    text: "「Order Guide」の主な用途はどれですか？",
+    options: ["カタログアイテムのカテゴリを管理する","複数の関連するカタログアイテムをまとめて一度に注文できるパッケージを提供する","承認フローを定義する","カタログアイテムの価格を設定する"],
+    answer: 1,
+    explanation: "Order Guideは関連する複数のカタログアイテムをパッケージ化し、ユーザーが一度の操作で複数アイテムを注文できるようにする機能です。例えば「新入社員セットアップ」としてPCのセットアップ・メールアカウント作成・IDカード申請をまとめて依頼できます。"
+  },
+  {
+    category: "Request Management",
+    text: "「SCTASK（Service Catalog Task）」について正しい説明はどれですか？",
+    options: ["ユーザーが直接作成できるタスク","RITMに紐づいた実作業タスクで、各SCTASK担当者が実際の作業を行う","変更管理のサブタスク","インシデントのサブタスク"],
+    answer: 1,
+    explanation: "SCTASK（sc_task）はRITMに紐づいた個別の実作業タスクです。例えば「ノートPC貸出」RITMには、「IT：ノートPC準備」「IT：OSセットアップ」「施設：配送」などのSCTASKが作成され、各担当部門が作業を実施します。"
+  },
+  {
+    category: "Request Management",
+    text: "サービスカタログの「Approval（承認）」を経由する際の一般的な承認者はどれですか？",
+    options: ["インシデント担当者のみ","申請者の上長・マネージャー、または指定されたグループ・ロール","ServiceNow管理者のみ","CABメンバー全員"],
+    answer: 1,
+    explanation: "サービスカタログの承認は通常、申請者のマネージャー（Manager）、指定されたApproval Groupのメンバー、または特定のロールを持つユーザーが承認者となります。承認フローはFlow DesignerやWorkflowで設定します。"
+  },
+  {
+    category: "Request Management",
+    text: "「Catalog Item Variable Set」を使用する主なメリットはどれですか？",
+    options: ["カタログアイテムのデザインを変更する","複数のカタログアイテムで共通のVariableセットを再利用できる","承認フローを自動化できる","カタログアイテムの価格を統一できる"],
+    answer: 1,
+    explanation: "Variable Setは複数のカタログアイテム間で共通して使用されるVariableのセットをまとめたものです。一度作成したVariable Setを複数のカタログアイテムに適用できるため、変更が一元管理でき、一貫性が保たれます。"
+  },
+  {
+    category: "Request Management",
+    text: "「Request（REQ）」→「Requested Item（RITM）」→「Catalog Task（SCTASK）」の関係を正しく説明しているのはどれですか？",
+    options: ["すべて独立したレコードで互いに関連しない","REQは注文全体のコンテナ、RITMは個別の注文アイテム、SCTASKはRITMを実施するための作業タスク","REQはRITMの子レコード、SCTASKはREQの子レコード","すべて同じテーブルの異なるビュー"],
+    answer: 1,
+    explanation: "REQ（sc_request）は1回の注文全体を表すコンテナです。1つのREQに複数のRITM（sc_req_item）が含まれます。各RITMには実際の作業を行うSCTASK（sc_task）が紐づきます。これがサービスカタログの3層構造です。"
+  },
+  {
+    category: "Request Management",
+    text: "「Two-step Checkout（2ステップチェックアウト）」の設定でユーザーが選択できる2つのオプションはどれですか？",
+    options: ["すぐに注文（Order Now）か、カートに追加（Add to Cart）","メールで依頼か電話で依頼","上長承認ありかなし","標準変更か緊急変更"],
+    answer: 0,
+    explanation: "Two-step Checkoutでは「Order Now（今すぐ注文、1アイテムを即時依頼）」か「Add to Cart（カートに追加、複数アイテムをまとめて注文）」の2つのオプションをユーザーに提供します。Service Portal/Service Catalogの設定から有効化できます。"
+  },
+  {
+    category: "Request Management",
+    text: "「Catalog Client Script」の主な用途はどれですか？",
+    options: ["サーバーサイドでカタログアイテムのデータを検証する","カタログフォーム上でVariableの動的な表示/非表示制御や値の自動設定などクライアントサイドの動作を制御する","承認フローを定義する","カタログアイテムのSLAを設定する"],
+    answer: 1,
+    explanation: "Catalog Client Scriptはサービスカタログフォーム上でJavaScriptを実行し、Variableの表示/非表示（UI Policy相当）、値の自動入力、リアルタイムバリデーションなどのクライアントサイドの動作を制御します。"
+  },
+
+  // ========== Knowledge Management（ナレッジ管理）8問 ==========
+  {
+    category: "Knowledge Management",
+    text: "ServiceNowの「Knowledge Base」はどのように構成されていますか？",
+    options: ["単一のフラットなデータベースとして構成される","Knowledge Base（KB）→ Category → Article の階層構造で構成される","Incident、Problem、Changeと同一の構造を持つ","CMDBのCI階層に対応した構造を持つ"],
+    answer: 1,
+    explanation: "Knowledge Baseは「Knowledge Base（ナレッジベース）」→「Category（カテゴリ）」→「Article（記事）」の階層構造で構成されます。複数のKBを作成し、それぞれにカテゴリとアクセス権限を設定できます。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "Knowledge Article（ナレッジ記事）の標準的なワークフロー順序として正しいのはどれですか？",
+    options: ["Draft → Review → Published → Retired","New → Active → Closed","Open → Approved → Archived","Create → Validate → Deploy → Decommission"],
+    answer: 0,
+    explanation: "Knowledge Articleの標準ワークフローは、Draft（下書き）→ Review（レビュー）→ Published（公開）→ Retired（廃止）です。Reviewステージでは記事の正確性と品質がチェックされます。公開後もRetiredで廃止管理が行われます。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "「Knowledge Block（ナレッジブロック）」の用途として正しいのはどれですか？",
+    options: ["特定ユーザーがナレッジにアクセスできないようにブロックする","複数のナレッジ記事で共通して使用できる再利用可能なコンテンツブロック","ナレッジ記事の公開承認をブロックする","外部サイトへのリンクをブロックする"],
+    answer: 1,
+    explanation: "Knowledge Blockは、複数のナレッジ記事で共通して使用される免責事項、警告文、手順の前置き等のコンテンツブロックです。一度作成すれば複数記事に埋め込むことができ、内容の変更がすべての参照記事に反映されます。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "「Knowledge Feedback（ナレッジフィードバック）」機能の主な目的はどれですか？",
+    options: ["ナレッジ記事の作成者に対する人事評価","記事の有用性・正確性に関するユーザーのフィードバックを収集し、記事品質の継続的改善に役立てる","記事へのアクセス数を制限する","記事の自動翻訳機能を提供する"],
+    answer: 1,
+    explanation: "Knowledge Feedbackは、記事閲覧後にユーザーが評価（星評価）やコメントを記録できる機能です。フィードバックを基に記事の更新・改善が促進されます。不正確な記事を早期発見して品質を維持する重要な仕組みです。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "インシデント解決時に「Knowledge Article」を作成する主な目的はどれですか？",
+    options: ["インシデントを自動的にCloseするため","解決手順を文書化して類似問題の再発時にサービスデスクやユーザー自身が参照できるようにするため","SLAの延長を申請するため","Change Managementプロセスを開始するため"],
+    answer: 1,
+    explanation: "インシデント解決時のKnowledge Article作成は、解決手順を組織の知識資産として蓄積するためです。次回類似インシデントが発生した際にサービスデスクが記事を参照することで解決時間を短縮できます（Shift Left戦略）。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "「Contextual Search（コンテキスト検索）」はサービスデスクでどのように役立ちますか？",
+    options: ["インシデントのカテゴリを自動で設定する","インシデント入力中に短い文章を解析して関連するナレッジ記事やインシデントを自動サジェストする","SLAタイマーを停止する","インシデントの優先度を自動計算する"],
+    answer: 1,
+    explanation: "Contextual Searchは、担当者がインシデントの件名・説明を入力している最中にテキストを解析し、関連するナレッジ記事・既存インシデント・問題を自動的にサジェストします。担当者は入力しながらすぐに解決案を確認でき、対応効率が向上します。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "「Knowledge Versioning（バージョン管理）」を有効にした場合の動作として正しいのはどれですか？",
+    options: ["記事を編集するたびに以前のバージョンが保存され、変更履歴の追跡とロールバックが可能になる","記事が自動的にPublished状態になる","記事の最新バージョンのみが保存され古いものは削除される","記事のバージョン番号がURLに自動追加される"],
+    answer: 0,
+    explanation: "Knowledge Versioningを有効にすると、記事を更新するたびに以前のバージョンが保存されます。変更履歴の確認、バージョン間の差分比較、以前のバージョンへのロールバックが可能になり、記事品質管理が向上します。"
+  },
+  {
+    category: "Knowledge Management",
+    text: "ServiceNowのナレッジ管理で「User Criteria」を使用する目的はどれですか？",
+    options: ["記事の検索順位を決定する","特定のユーザー、グループ、ロールのみが特定のKnowledge BaseやArticleを閲覧・編集できるようアクセス制御する","記事の自動翻訳対象言語を指定する","記事の有効期限を設定する"],
+    answer: 1,
+    explanation: "User Criteriaは、ナレッジベースや記事のアクセス制御を定義するルールセットです。ユーザー、グループ、ロール、会社、部門などの条件を組み合わせて「誰が閲覧できるか」「誰が投稿できるか」を細かく制御できます。"
+  },
+
+  // ========== SLA / OLA / UC（サービスレベル合意）8問 ==========
+  {
+    category: "SLA Management",
+    text: "「SLA（Service Level Agreement）」「OLA（Operational Level Agreement）」「UC（Underpinning Contract）」の説明として正しいのはどれですか？",
+    options: ["SLAはIT部門間の合意、OLAはお客様との合意、UCはベンダーとの合意","SLAはITサービス提供者とお客様の合意、OLAはIT部門間の合意、UCはサービス提供者とベンダー（外部）の契約","SLA・OLA・UCはすべて同じ概念の別名","UCはすべての合意の上位に位置する"],
+    answer: 1,
+    explanation: "SLAはサービス提供者（IT部門）とお客様（ビジネス部門）間の合意。OLAはIT部門間（例：サービスデスクとインフラチーム）の内部合意。UCはサービス提供者と外部ベンダー（ハードウェア保守会社等）との契約です。"
+  },
+  {
+    category: "SLA Management",
+    text: "SLAの「Breach Warning（違反警告）」とはどのような機能ですか？",
+    options: ["SLAが違反した後に送信されるレポート","SLAの期限が近づいたタイミングで担当者やマネージャーに事前警告を送信する機能","SLAを自動的にキャンセルする機能","SLAのタイマーを一時停止する機能"],
+    answer: 1,
+    explanation: "SLA Breach Warningは、SLAの期限に達する前（例：残り50%、残り75%）の段階で担当者やマネージャーにメール通知を送る機能です。事前警告により、SLA違反前に対応を加速させることができます。"
+  },
+  {
+    category: "SLA Management",
+    text: "「Business Hours（ビジネス時間）」をSLAに設定する目的はどれですか？",
+    options: ["インシデントのPriorityを変更するため","SLAのタイマーを営業時間内のみカウントし、営業時間外はタイマーを停止するため","24時間SLAタイマーを有効にするため","担当者の勤務シフトを管理するため"],
+    answer: 1,
+    explanation: "Business HoursをSLAに設定すると、SLAタイマーは営業時間（例：平日9:00〜18:00）のみカウントされ、営業時間外や祝日はタイマーが停止します。24時間対応が不要なサービスに対して合理的なSLA目標を設定できます。"
+  },
+  {
+    category: "SLA Management",
+    text: "「SLA Pause Condition（一時停止条件）」として正しいのはどれですか？",
+    options: ["インシデントのPriorityがP1の場合にSLAを一時停止する","インシデントがOn Hold状態（例：Awaiting Caller）の場合にSLAタイマーを一時停止する","SLAに担当者が割り当てられていない場合に停止する","インシデントに添付ファイルがない場合に停止する"],
+    answer: 1,
+    explanation: "SLA Pause Conditionにより、インシデントがOn Hold状態（Awaiting Caller、Awaiting Vendor等）の場合にSLAタイマーが一時停止します。ユーザーや外部ベンダーの応答待ち時間をSLA計算から除外することで、公平なSLA管理が実現します。"
+  },
+  {
+    category: "SLA Management",
+    text: "「Retroactive Start（遡及的開始）」をSLAに設定する場合の動作はどれですか？",
+    options: ["SLAタイマーがインシデント作成時刻ではなく、特定のフィールド変更時刻から開始される","SLAタイマーが現在時刻より30分前から開始される","SLAが自動的にBreached状態になる","SLAタイマーを24時間遡って計算する"],
+    answer: 0,
+    explanation: "Retroactive Startを有効にすると、SLAタイマーの開始時刻がSLAレコード作成時刻ではなく、指定した過去のフィールド値（例：インシデントの最初のCategoryが設定された時刻）から遡って開始されます。"
+  },
+  {
+    category: "SLA Management",
+    text: "「Response SLA」と「Resolution SLA」の違いはどれですか？",
+    options: ["両者は同じ概念","Response SLAはインシデントへの最初の応答（担当者割り当て等）の期限、Resolution SLAはインシデントの解決完了の期限","Response SLAはP1専用、Resolution SLAは全Priority対象","Resolution SLAは自動計算され、Response SLAは手動設定"],
+    answer: 1,
+    explanation: "Response SLA（応答SLA）はインシデントを受け付けてから最初の対応（担当者割り当て、ユーザーへの連絡等）を行うまでの期限です。Resolution SLA（解決SLA）はインシデントを完全に解決するまでの全体的な期限です。"
+  },
+  {
+    category: "SLA Management",
+    text: "SLA定義の「Condition（条件）」フィールドで設定する内容はどれですか？",
+    options: ["SLAタイマーの開始・停止・リセットを行う条件","このSLAが適用される対象インシデントを絞り込む条件（Priority、Category等）","SLA違反時の通知先","SLAの計算に使用するSchedule"],
+    answer: 1,
+    explanation: "SLA定義の「Condition」フィールドでは、このSLAが適用される対象レコードを絞り込む条件を設定します（例：Priority=P1、Category=Network等）。条件に一致するインシデントのみにSLAタイマーが適用されます。"
+  },
+  {
+    category: "SLA Management",
+    text: "「SLA Achievement（SLA達成率）」をレポートで確認する場合に使用する主なフィールドはどれですか？",
+    options: ["Has Breached フィールドと Stage フィールドを組み合わせる","Priority フィールドのみ","インシデントの作成日時のみ","担当者のユーザー名のみ"],
+    answer: 0,
+    explanation: "SLA達成率のレポートでは、「Has Breached」（Breachが発生したかどうか）と「Stage」（In Progress、Completed、Breached等の現在の状態）フィールドを組み合わせて使用します。これによりSLAの達成状況を正確に把握できます。"
+  },
+
+  // ========== Service Portal（サービスポータル）8問 ==========
+  {
+    category: "Service Portal",
+    text: "「Service Portal」と「CMS（Content Management System）」の主な違いはどれですか？",
+    options: ["両者は完全に同じ機能を提供する","Service Portalはレスポンシブで現代的なAngularベースのUI、CMSはレガシーな静的コンテンツ管理システム","CMSはモバイル対応、Service PortalはPC専用","Service PortalはITSM専用、CMSはHR専用"],
+    answer: 1,
+    explanation: "Service Portalは、AngularJSベースの現代的なレスポンシブUIフレームワークです。CMSは旧来のJelly/HTMLベースの静的コンテンツ管理システムです。現在はService Portalへの移行が推奨されており、CMSはレガシー扱いです。"
+  },
+  {
+    category: "Service Portal",
+    text: "Service Portalで「Widget（ウィジェット）」とはどのようなものですか？",
+    options: ["カタログアイテムの別名","ポータルページ上に配置される独立した機能コンポーネント（HTMLテンプレート、CSS、クライアントスクリプト、サーバースクリプトで構成）","Service Portal全体のレイアウトを制御するコンテナ","ユーザーのプロフィール設定",""],
+    answer: 1,
+    explanation: "Widgetはサービスポータルの最小構成単位で、ポータルページ上に配置される独立した機能コンポーネントです。HTML Template、CSS、Client Script（AngularJS）、Server Script（GlideScript）の4つで構成されます。"
+  },
+  {
+    category: "Service Portal",
+    text: "Service PortalのURL suffixはどこで設定しますか？",
+    options: ["System Properties > URL Settings","Service Portal > Portals レコードの「URL suffix」フィールド","Users > User Preferences","Security > Access Control"],
+    answer: 1,
+    explanation: "Service PortalのURL suffixは、Service Portal > Portals からPortalレコードを開き「URL suffix」フィールドで設定します。設定したURL suffixにより、ポータルのアクセスURLが決まります（例：/sp、/itsm_portal）。"
+  },
+  {
+    category: "Service Portal",
+    text: "「Branding Editor（ブランディングエディタ）」でService Portalをカスタマイズできる項目はどれですか？",
+    options: ["Widgetのサーバースクリプト","ポータルのロゴ、テーマカラー、フォント、ヘッダー/フッターの外観","APIエンドポイントの設定","ユーザーの認証方法"],
+    answer: 1,
+    explanation: "Branding Editorでは、Service Portalのビジュアルデザイン（ロゴ、プライマリカラー、ヘッダー/フッター色、フォント設定等）をコードなしでGUIから変更できます。企業のブランドガイドラインに沿ったポータルデザインを実現できます。"
+  },
+  {
+    category: "Service Portal",
+    text: "「Service Portal Designer」の主な機能はどれですか？",
+    options: ["カタログアイテムのVariableを作成する","ポータルページのレイアウト（コンテナ、行、列、ウィジェット）をドラッグ&ドロップで視覚的に編集する","Flow Designerのフローを作成する","SLAの条件を設定する"],
+    answer: 1,
+    explanation: "Service Portal Designerは、ポータルページのレイアウトをGUI上でドラッグ&ドロップ編集できるツールです。Container、Row、Column、Widgetの構造を視覚的に組み立て、各Widgetを配置・設定できます。"
+  },
+  {
+    category: "Service Portal",
+    text: "Service Portalで「User Criteria」を使用する場合の主な目的はどれですか？",
+    options: ["ポータルのパフォーマンスを向上させる","特定のユーザー・グループ・ロールのみが特定のカタログアイテムやKBを閲覧できるよう制御する","ポータルのURLを変更する","WidgetのCSSをカスタマイズする"],
+    answer: 1,
+    explanation: "User CriteriaはService Portal上でカタログアイテムやナレッジベースへのアクセス制御に使用されます。ユーザー、グループ、ロール、会社、部門などの条件でアクセス可能なコンテンツを動的に制御できます。"
+  },
+  {
+    category: "Service Portal",
+    text: "Service Portalの「Theme（テーマ）」設定において、SCSSを使用する利点はどれですか？",
+    options: ["HTMLテンプレートを自動生成できる","変数（Variables）を使って一元管理されたカラーコードやフォントサイズをポータル全体に適用できる","JavaScriptの実行速度を上げる","データベースクエリを最適化できる"],
+    answer: 1,
+    explanation: "Service PortalのテーマではSCSS（Sass）が使用されます。SCSSの変数機能により、ブランドカラーやフォントサイズなどを1箇所で定義して全体に適用できます。テーマ変更時に一元的に更新でき、一貫性のあるデザインが維持されます。"
+  },
+  {
+    category: "Service Portal",
+    text: "「$sp.getValue()」はService Portalのどのコンポーネントで使用されるAPIですか？",
+    options: ["UI Policyのスクリプトフィールド","WidgetのServer Script内でWidgetインスタンスのオプション値を取得するために使用するSpUtil API","Catalog Client Script","Business Rule"],
+    answer: 1,
+    explanation: "$sp.getValue()はService Portal WidgetのServer Script内で使用できるSpUtil APIのメソッドです。Widgetインスタンスに設定されたオプション値を取得する際に使用します。例えば$sp.getValue('table')でWidgetに設定されたテーブル名を取得できます。"
+  },
+
+  // ========== Flow Designer / Workflow（フローデザイナー）8問 ==========
+  {
+    category: "Flow Designer",
+    text: "「Flow Designer」と「Legacy Workflow Engine」の主な違いはどれですか？",
+    options: ["両者は完全に同じ機能を提供する","Flow Designerは現代的なノーコード/ローコードUI、再利用可能なSubflow/Action、IntegrationHubとの統合が強み。Legacy Workflowは旧来のダイアグラム型エンジン","Flow DesignerはITSM専用、Legacy WorkflowはHR専用","Legacy WorkflowはSandboxでのみ動作する"],
+    answer: 1,
+    explanation: "Flow Designerは、現代的なノーコード/ローコードUIで再利用可能なSubflow・Action・IntegrationHubのSpoke連携が強みです。Legacy Workflow EngineはActivities/Transitionベースの旧型エンジンです。新規開発はFlow Designerが推奨されています。"
+  },
+  {
+    category: "Flow Designer",
+    text: "Flow Designerの「Trigger（トリガー）」タイプとして存在するものはどれですか？",
+    options: ["Record-based（レコード作成/更新）、Schedule（スケジュール）、Inbound Email、Application のみ","以上のすべてに加えてSLAトリガー、Metric Baseなど複数のタイプが存在する","Record-basedのみ","Schedule（スケジュール）のみ"],
+    answer: 1,
+    explanation: "Flow DesignerのTriggerには、Record-based（レコード作成・更新・削除）、Schedule（スケジュール実行）、Inbound Email（受信メール）、Application（カスタムイベント）、SLA（SLAステージ変化）など複数のタイプが存在します。"
+  },
+  {
+    category: "Flow Designer",
+    text: "Flow Designerの「Action（アクション）」として「Ask for Approval」を使用する場面はどれですか？",
+    options: ["フローを一時停止して特定のユーザーまたはグループの承認を待つ場合","メールを自動送信する場合","レコードを削除する場合","スクリプトを実行する場合"],
+    answer: 0,
+    explanation: "「Ask for Approval」アクションはフローを一時停止し、指定されたユーザー・グループ・ロールからの承認を待ちます。承認された場合と却下された場合で後続の処理を分岐させることができます。サービスカタログの承認フロー等に多用されます。"
+  },
+  {
+    category: "Flow Designer",
+    text: "「Subflow（サブフロー）」を使用する主なメリットはどれですか？",
+    options: ["フローの実行速度が向上する","共通の処理ロジックを再利用可能なコンポーネントとして切り出し、複数のFlowから呼び出せる","Subflowは管理者のみが実行できる","Subflowはスケジュール実行専用"],
+    answer: 1,
+    explanation: "Subflowは共通の処理ロジック（例：承認フロー、通知送信）を独立したコンポーネントとして定義し、複数のFlowから再利用できます。ロジックの一元管理が可能になり、変更時は1箇所の修正で全Flowに反映されます。"
+  },
+  {
+    category: "Flow Designer",
+    text: "Flow Designerの「Flow Variable」と「Data Pill」の関係として正しいのはどれですか？",
+    options: ["Flow VariableとData Pillは無関係","Flow Variableはフロー内でデータを保存する変数。Data PillはFlow Variable等の値をアクション入力に動的にマッピングするドラッグ&ドロップUI要素","Data PillはSubflowの別名","Flow VariableはLegacy Workflow専用"],
+    answer: 1,
+    explanation: "Flow Variableはフロー実行中にデータを一時保存する変数です。Data Pill（データピル）は、Triggerデータ・アクション出力・Flow Variable等の値をドラッグ&ドロップで後続アクションの入力フィールドにマッピングするUI要素です。"
+  },
+  {
+    category: "Flow Designer",
+    text: "「Spoke（スポーク）」とIntegrationHubの関係として正しいのはどれですか？",
+    options: ["Spokeは単独で動作するフローコンポーネント","SpokeはIntegrationHubの一部で、特定の外部サービス（Slack、Jira等）との連携に必要なActionのセット","Spokeはサービスカタログのテンプレート","SpokeはLegacy Workflowのみで使用される"],
+    answer: 1,
+    explanation: "SpokeはIntegrationHubのコンポーネントで、特定の外部サービス（Slack、Jira、GitHub、ServiceNow等）との連携に必要なActionのコレクションです。Flow DesignerのActionとして利用でき、コーディング不要で外部連携が実現できます。"
+  },
+  {
+    category: "Flow Designer",
+    text: "Flow Designerで「Condition（条件）」を使用する目的はどれですか？",
+    options: ["フローのトリガーを設定する","フロー内で条件分岐（If/Else）を作成し、条件に応じて異なる処理パスを実行する","フローのスケジュールを設定する","Subflowを呼び出す"],
+    answer: 1,
+    explanation: "Flow DesignerのConditionは、フロー内でIf/Else分岐を作成するための条件定義です。レコードのフィールド値やFlow Variable等の条件を評価し、条件に応じて異なるアクションシーケンスを実行させることができます。"
+  },
+  {
+    category: "Flow Designer",
+    text: "「Flow Designer」でフローをテスト実行する際の推奨手順はどれですか？",
+    options: ["本番環境で直接実行してログを確認する","「Test（テスト）」ボタンを使用してフローをシミュレーション実行し、各ステップの入出力を確認してからActivateする","フローをExportしてLocal環境でテストする","インシデントを作成して自動的にトリガーする"],
+    answer: 1,
+    explanation: "Flow Designerの「Test」機能を使うと、本番環境に影響を与えずにフローをシミュレーション実行できます。各アクションの入力・出力・ログが表示され、問題を特定しやすくなります。テスト完了後に「Activate」で本番反映します。"
+  },
+
+  // ========== Notifications（通知）5問 ==========
+  {
+    category: "Notifications",
+    text: "Email Notificationの「When to send（送信条件）」で設定できる内容はどれですか？",
+    options: ["通知の送信先メールアドレスのみ","レコードの作成時、更新時（条件フィルター）、または特定フィールド変更時のいずれかでメールを送信するかを設定","通知の件名テンプレート","メールサーバーのSMTP設定"],
+    answer: 1,
+    explanation: "Email Notificationの「When to send」タブでは、通知をRecord Insertedとき、Record Updatedとき（条件フィルターあり）、Fields changedとき（特定フィールド変更時）のどの状況で送信するかを設定します。"
+  },
+  {
+    category: "Notifications",
+    text: "Email Notificationの「Who will receive（受信者）」の設定方法として正しいものはどれですか？",
+    options: ["固定のメールアドレスのみ設定可能","レコードのフィールド（例：Caller、Assigned to）、ユーザー、グループ、ロールのいずれかまたは組み合わせで設定できる","管理者ユーザーのみに固定","外部メールアドレスは設定不可"],
+    answer: 1,
+    explanation: "Email Notificationの受信者（Who will receive）には、レコードのフィールド参照（Caller、Assigned to、Watch list等）、個別ユーザー、グループ、ロールを組み合わせて設定できます。柔軟な受信者設定が可能です。"
+  },
+  {
+    category: "Notifications",
+    text: "「Notification Device（通知デバイス）」について正しい説明はどれですか？",
+    options: ["物理的な通知デバイス（スマートフォン等）の設定","ユーザーの通知受信方法（メール、SMS等）と受信デバイスを登録するユーザープロファイルの設定","システム全体のSMTPサーバー設定","プッシュ通知専用の設定"],
+    answer: 1,
+    explanation: "Notification Deviceは、各ユーザーが通知を受信するデバイス（メールアドレス、SMSの電話番号等）を登録するプロファイル設定です。ユーザーはSelf-Service Portalから自分の通知デバイスを管理できます。"
+  },
+  {
+    category: "Notifications",
+    text: "「Subscription Model（サブスクリプションモデル）」による通知管理の特徴はどれですか？",
+    options: ["管理者のみが通知の受信者を設定できる","ユーザーが自分で必要な通知を購読（Subscribe）または購読解除（Unsubscribe）できる","すべての通知が強制送信される","サブスクリプションモデルはSMSのみ対応"],
+    answer: 1,
+    explanation: "Subscription Modelでは、ユーザーが自分で必要な通知をSubscribe（購読）またはUnsubscribe（購読解除）できます。ユーザーは必要な情報のみを受信できるため、通知過多を防ぎ、重要な通知の見落としを減らせます。"
+  },
+  {
+    category: "Notifications",
+    text: "「Inbound Email Action（受信メールアクション）」の主な目的はどれですか？",
+    options: ["ServiceNowからメールを送信する","受信したメールの内容を解析してServiceNow上でレコードの作成・更新などのアクションを自動実行する","メールのテンプレートを作成する","SPAMメールをフィルタリングする"],
+    answer: 1,
+    explanation: "Inbound Email Actionは、ServiceNowに届いた受信メールを解析し、件名・本文・差出人等の内容に基づいてインシデントの作成・更新・コメント追加などのアクションを自動実行する機能です。メール受付の自動化に活用されます。"
+  },
+
+  // ========== Roles & Groups（ロールとグループ）6問 ==========
+  {
+    category: "Roles & Groups",
+    text: "「itil」ロールをユーザーに付与した場合、主にどのような権限が与えられますか？",
+    options: ["ServiceNowの全設定にアクセスできるシステム管理者権限","インシデント・問題・変更・サービスカタログ等のITSMフォームの作成・更新・閲覧権限（標準ITSMユーザー権限）","ナレッジ記事の管理権限のみ","Service Portalの管理権限のみ"],
+    answer: 1,
+    explanation: "「itil」ロールは、ITSMの標準的な操作（インシデント・問題・変更・サービスカタログ・ナレッジ等の作成・更新・閲覧）を行うためのベースロールです。サービスデスク担当者・IT担当者に付与される最も基本的なITSMロールです。"
+  },
+  {
+    category: "Roles & Groups",
+    text: "ServiceNowのGroupには複数のTypeが存在しますが、「Assignment Group」の役割はどれですか？",
+    options: ["メールアドレスのリストとして機能するグループ","インシデント・変更などのレコードの担当部門として設定され、作業を割り当てられるグループ","承認プロセスで承認者として機能するグループ","通知の受信者グループ"],
+    answer: 1,
+    explanation: "Assignment Groupはインシデント、問題、変更などのレコードのAssignment Groupフィールドに設定され、その作業に責任を持つチームを表します。例えば「Network Team」「Desktop Support」などの機能チームが登録されます。"
+  },
+  {
+    category: "Roles & Groups",
+    text: "「Role Inheritance（ロール継承）」の仕組みとして正しいのはどれですか？",
+    options: ["子ロールは親ロールの権限をオーバーライドする","ロールは階層構造を持ち、子ロールに付与されたユーザーは自動的に親ロールの権限も継承する","ロール継承はServiceNowでは機能しない","継承はグループにのみ適用され、個別ユーザーには適用されない"],
+    answer: 1,
+    explanation: "Role Inheritanceにより、ロールは階層的に別のロールを包含できます。例えば「itil_admin」ロールは「itil」ロールを内包しており、itil_adminを付与されたユーザーはitilの権限も自動的に持ちます。"
+  },
+  {
+    category: "Roles & Groups",
+    text: "「sn_incident_write」ロールと「itil」ロールの違いとして正しいのはどれですか？",
+    options: ["両者は同じ権限を提供する","sn_incident_writeはインシデントテーブルへの書き込み権限に特化したロール、itilはITSM全般の標準操作ロール","sn_incident_writeの方がitilより広い権限を持つ","itilはLegacy Workflowのみで使用される"],
+    answer: 1,
+    explanation: "sn_incident_writeはインシデントテーブルへの書き込みに特化したきめ細かい権限制御用ロールです。itilはITSM全体（インシデント・問題・変更・サービスカタログ等）を対象とした標準ロールです。きめ細かい権限制御にはsn_incident_writeのような専用ロールが使用されます。"
+  },
+  {
+    category: "Roles & Groups",
+    text: "「User Criteria」とGroup/Roleを組み合わせてアクセス制御をする場面として最も適切なのはどれですか？",
+    options: ["すべてのユーザーに同じ権限を付与する場合","Knowledge Base、Service Catalog Item等でユーザーの属性（会社、部門、グループ、ロール）に基づいてコンテンツへのアクセスを動的に制御する場合","System Administratorロールの管理にのみ使用する場合","インシデントのPriority計算に使用する場合"],
+    answer: 1,
+    explanation: "User Criteriaは、ユーザーの会社・部門・グループ・ロール等の属性に基づいて、ナレッジベース・カタログアイテム等へのアクセスを動的に制御するルールセットです。グループやロールと組み合わせてきめ細かいコンテンツアクセス管理を実現します。"
+  },
+  {
+    category: "Roles & Groups",
+    text: "「Group Membership（グループメンバーシップ）」をグループマネージャーが管理できるようにするための設定はどれですか？",
+    options: ["GroupレコードのManager フィールドにユーザーを設定する","全グループをPublicに設定する","グループメンバー管理はSystem Administratorのみが可能","メンバーの追加はService Catalogからのみ可能"],
+    answer: 0,
+    explanation: "GroupレコードのManager フィールドに設定されたユーザーは、そのグループのメンバー管理（追加・削除）を行う権限を持ちます。これにより管理者に頼らずグループマネージャーが自チームのメンバーを自律的に管理できます。"
+  },
+
+  // ========== Reporting & Dashboards（レポート・ダッシュボード）7問 ==========
+  {
+    category: "Reporting & Dashboards",
+    text: "ServiceNowで利用可能なReport Typeとして正しい組み合わせはどれですか？",
+    options: ["Bar、Pie、List のみ","Bar、Line、Pie、Donut、Histogram、List、Heat Map、Trend、Scorecard等の多様なタイプ","表形式（List）のみ","BarとPieのみ"],
+    answer: 1,
+    explanation: "ServiceNowのReportには、Bar（棒グラフ）、Line（折れ線グラフ）、Pie/Donut（円グラフ）、Histogram（ヒストグラム）、List（一覧）、Heat Map（ヒートマップ）、Trend（トレンド）、Scorecard等の多様なタイプがあります。"
+  },
+  {
+    category: "Reporting & Dashboards",
+    text: "「Dashboard（ダッシュボード）」と「Homepage（ホームページ）」の主な違いはどれですか？",
+    options: ["両者は同じ機能","Dashboardは共有可能なROLE-based可視化ツールでキャンバス型レイアウト。Homepageはユーザー個人のカスタムスタートページ","Homepageはリアルタイムデータを表示し、Dashboardは静的レポートのみ","DashboardはITSM専用、HomepageはHR専用"],
+    answer: 1,
+    explanation: "Dashboardは共有可能なキャンバス型の可視化ツールで、複数のレポート・ウィジェットを1ページに集約してロールベースで共有できます。Homepageは各ユーザーが個人的にカスタマイズできるスタートページです。"
+  },
+  {
+    category: "Reporting & Dashboards",
+    text: "「Scheduled Report（スケジュールレポート）」の設定で必要な情報はどれですか？",
+    options: ["レポートの実行スケジュール（日次、週次等）と送信先ユーザー・メールアドレス","レポートのデザインのみ","データベースのバックアップスケジュール","インシデントの自動解決スケジュール"],
+    answer: 0,
+    explanation: "Scheduled Reportでは、レポートの実行頻度（日次・週次・月次等）、実行時刻、レポートの出力形式（PDF・Excel等）、送信先ユーザーまたはメールアドレスを設定します。設定された時刻に自動実行・配信されます。"
+  },
+  {
+    category: "Reporting & Dashboards",
+    text: "「Performance Analytics（PA）」の基本概念として正しいのはどれですか？",
+    options: ["ServiceNowのシステムパフォーマンス（応答速度等）を監視するツール","Indicatorsに基づいてトレンドデータを蓄積・分析し、KPIの時系列変化を可視化するアドオン製品","一般的なレポートとまったく同じ機能","CMDBのデータ品質を分析するツール"],
+    answer: 1,
+    explanation: "Performance Analytics（PA）はKPIやメトリクスを時系列で収集・分析するアドオン製品です。Indicators（指標）を定義してデータを自動収集し、トレンド・スコアカード・ブレークダウン分析が行えます。通常のReportが現在のスナップショットなのに対し、PAは時系列変化の把握に優れます。"
+  },
+  {
+    category: "Reporting & Dashboards",
+    text: "レポートの「Data Source（データソース）」として設定できるのはどれですか？",
+    options: ["ServiceNowテーブルのみ","ServiceNowテーブル、データベースビュー（Database View）、Report Sourceなど複数のデータソース","外部データベースのみ","CSVファイルのみ"],
+    answer: 1,
+    explanation: "レポートのData Sourceには、ServiceNowテーブル（Incident等）、Database View（複数テーブルを結合したビュー）、Report Source（カスタムデータソース）など複数のオプションがあります。複雑なレポート要件には Database Viewが有効です。"
+  },
+  {
+    category: "Reporting & Dashboards",
+    text: "「Report Group By（グループ化）」機能を使用する目的はどれですか？",
+    options: ["レポートを特定のユーザーにのみ表示する","データを特定フィールド（Category、Assignment Group等）の値別にグループ化・集計してカテゴリ別分析を行う","レポートの実行順序を設定する","複数レポートを1つにまとめる"],
+    answer: 1,
+    explanation: "Group By機能を使うと、データを指定フィールドの値別にグループ化・集計できます（例：Assignment Group別のインシデント件数、Priority別の解決時間）。傾向分析や問題箇所の特定に有効です。"
+  },
+  {
+    category: "Reporting & Dashboards",
+    text: "「Interactive Filter（インタラクティブフィルター）」をDashboardで使用する目的はどれですか？",
+    options: ["ダッシュボードのレイアウトを変更する","ダッシュボード上の複数レポートを一括して絞り込むためのフィルターウィジェット","特定ユーザーのみダッシュボードにアクセスできるようにする","レポートのスケジュール設定を変更する"],
+    answer: 1,
+    explanation: "Interactive FilterはDashboard上に配置するフィルターウィジェットです。ユーザーが選択した値（例：期間、チーム）に応じて、Dashboard上の複数レポートを一括してリアルタイムにフィルタリングできます。"
+  }
+
+];
+
+// ============================================================
+//  アプリ状態
+// ============================================================
+const QUIZ_SIZE = 40;
+const PASS_RATE = 65;
+const letters = ['A', 'B', 'C', 'D'];
+
+let shuffledQuestions = [];
+let currentIndex = 0;
+let userAnswers = {};
+
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  ['start-screen', 'quiz-screen', 'result-screen'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+}
+
+function showStart() { showScreen('start-screen'); }
+
+// ============================================================
+//  クイズ開始
+// ============================================================
+function startQuiz() {
+  shuffledQuestions = shuffle(questions).slice(0, QUIZ_SIZE);
+  currentIndex = 0;
+  userAnswers = {};
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+// ============================================================
+//  問題描画
+// ============================================================
+function renderQuestion() {
+  const q = shuffledQuestions[currentIndex];
+  const saved = userAnswers[currentIndex];
+
+  document.getElementById('progress-fill').style.width =
+    ((currentIndex / shuffledQuestions.length) * 100) + '%';
+  document.getElementById('q-counter').textContent =
+    `問題 ${currentIndex + 1} / ${shuffledQuestions.length}`;
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<span class="opt-letter">${letters[i]}</span><span>${opt}</span>`;
+
+    if (saved) {
+      div.classList.add('disabled');
+      if (i === saved.selected && saved.isCorrect) div.classList.add('correct');
+      if (i === saved.selected && !saved.isCorrect) div.classList.add('wrong');
+      if (!saved.isCorrect && i === saved.correct) div.classList.add('show-correct');
+    } else {
+      div.onclick = () => selectOption(i);
+    }
+    container.appendChild(div);
+  });
+
+  const expBox = document.getElementById('explanation-box');
+  if (saved) {
+    document.getElementById('explanation-text').textContent = q.explanation;
+    expBox.style.display = 'block';
+  } else {
+    expBox.style.display = 'none';
+    document.getElementById('explanation-text').textContent = '';
+  }
+
+  const isLast = currentIndex === shuffledQuestions.length - 1;
+  document.getElementById('next-btn').disabled = !saved;
+  document.getElementById('next-btn').textContent = isLast ? '結果を見る' : '次の問題 →';
+  document.getElementById('prev-btn').disabled = currentIndex === 0;
+}
+
+// ============================================================
+//  選択肢クリック
+// ============================================================
+function selectOption(idx) {
+  if (userAnswers[currentIndex]) return;
+
+  const q = shuffledQuestions[currentIndex];
+  const isCorrect = idx === q.answer;
+  userAnswers[currentIndex] = { selected: idx, correct: q.answer, isCorrect };
+
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => {
+    o.classList.add('disabled');
+    o.onclick = null;
+  });
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) opts[q.answer].classList.add('show-correct');
+
+  document.getElementById('explanation-text').textContent = q.explanation;
+  document.getElementById('explanation-box').style.display = 'block';
+  document.getElementById('next-btn').disabled = false;
+}
+
+// ============================================================
+//  ナビゲーション
+// ============================================================
+function nextQuestion() {
+  if (!userAnswers[currentIndex]) return;
+  currentIndex++;
+  if (currentIndex >= shuffledQuestions.length) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function prevQuestion() {
+  if (currentIndex <= 0) return;
+  currentIndex--;
+  renderQuestion();
+}
+
+function confirmAbort() {
+  if (confirm('試験を中断してトップに戻りますか？')) showStart();
+}
+
+// ============================================================
+//  結果
+// ============================================================
+function showResult() {
+  const total = shuffledQuestions.length;
+  const score = Object.values(userAnswers).filter(a => a.isCorrect).length;
+  const pct = Math.round((score / total) * 100);
+  const pass = pct >= PASS_RATE;
+
+  document.getElementById('score-pct').textContent = pct + '%';
+  document.getElementById('result-title').textContent = pass ? '合格ライン達成！' : 'もう少し頑張りましょう';
+  const badge = document.getElementById('pass-badge');
+  badge.textContent = pass ? `✓ PASS（${PASS_RATE}%以上）` : `✗ FAIL（${PASS_RATE}%未満）`;
+  badge.className = 'pass-badge ' + (pass ? 'pass' : 'fail');
+
+  document.getElementById('stat-correct').textContent = score;
+  document.getElementById('stat-wrong').textContent = total - score;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('review-section').style.display = 'none';
+
+  showScreen('result-screen');
+}
+
+function restartQuiz() { startQuiz(); }
+
+// ============================================================
+//  間違えた問題の復習
+// ============================================================
+function reviewWrong() {
+  const wrongList = Object.entries(userAnswers)
+    .filter(([, a]) => !a.isCorrect)
+    .map(([idx, a]) => ({ idx: Number(idx), ...a }));
+
+  const section = document.getElementById('review-section');
+  document.getElementById('wrong-count').textContent = wrongList.length;
+
+  if (wrongList.length === 0) {
+    section.innerHTML = '<h3 style="color:var(--sn-green);border-bottom:2px solid var(--sn-green);padding-bottom:8px;">全問正解！お見事です！</h3>';
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  const items = document.getElementById('review-items');
+  items.innerHTML = '';
+  wrongList.forEach(ans => {
+    const q = shuffledQuestions[ans.idx];
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    div.innerHTML = `
+      <div class="review-q-num">問題 ${ans.idx + 1} | ${q.category}</div>
+      <div class="review-q-text">${q.text}</div>
+      <div class="review-answer your"><strong>あなたの回答：</strong> ${letters[ans.selected]}. ${q.options[ans.selected]}</div>
+      <div class="review-answer correct"><strong>正解：</strong> ${letters[ans.correct]}. ${q.options[ans.correct]}</div>
+      <div class="review-exp">${q.explanation}</div>
+    `;
+    items.appendChild(div);
+  });
+
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

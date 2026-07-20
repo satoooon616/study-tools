@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#4A1F61" />
+  <title>CIS-DF 模擬試験 | ServiceNow</title>
+  <style>
+    :root {
+      --sn-purple: #6B2D8B;
+      --sn-purple-light: #8B3FB5;
+      --sn-purple-dark: #4A1F61;
+      --sn-gray-bg: #f0f0f0;
+      --sn-gray-card: #ffffff;
+      --sn-gray-border: #d0d0d7;
+      --sn-gray-text: #293949;
+      --sn-gray-muted: #606060;
+      --sn-green: #0a8f4d;
+      --sn-red: #c4001d;
+      --sn-yellow: #e69900;
+      --sn-blue: #0054a6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background: var(--sn-gray-bg);
+      color: var(--sn-gray-text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--sn-purple-dark);
+      color: #fff;
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+    header .badge {
+      background: var(--sn-purple-light);
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* CONTAINER */
+    .container { max-width: 840px; margin: 36px auto; padding: 0 16px; }
+
+    /* CARD */
+    .card {
+      background: var(--sn-gray-card);
+      border: 1px solid var(--sn-gray-border);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* START SCREEN */
+    #start-screen h1 { font-size: 26px; font-weight: 700; color: var(--sn-purple-dark); margin-bottom: 8px; }
+    #start-screen .subtitle { color: var(--sn-gray-muted); font-size: 14px; margin-bottom: 24px; }
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    .info-item { border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 16px; text-align: center; }
+    .info-item .num { font-size: 28px; font-weight: 700; color: var(--sn-purple); }
+    .info-item .label { font-size: 13px; color: var(--sn-gray-muted); margin-top: 4px; }
+
+    /* QUIZ SCREEN */
+    #quiz-screen { display: none; }
+    .progress-bar-wrap { background: #e0e0e8; border-radius: 4px; height: 6px; margin-bottom: 20px; overflow: hidden; }
+    .progress-bar-fill { background: var(--sn-purple); height: 100%; transition: width 0.3s ease; }
+    .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .q-counter { font-size: 13px; color: var(--sn-gray-muted); font-weight: 600; }
+    .q-category { background: var(--sn-purple-dark); color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 12px; }
+    .q-text { font-size: 17px; font-weight: 600; line-height: 1.6; margin-bottom: 24px; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option {
+      border: 2px solid var(--sn-gray-border);
+      border-radius: 6px;
+      padding: 14px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 15px;
+      min-height: 52px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .option:hover:not(.disabled) { border-color: var(--sn-purple-light); background: #f5eeff; }
+    .option .opt-letter {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--sn-gray-border);
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .option.correct { border-color: var(--sn-green); background: #edfff5; }
+    .option.correct .opt-letter { background: var(--sn-green); border-color: var(--sn-green); color: #fff; }
+    .option.wrong { border-color: var(--sn-red); background: #fff0f2; }
+    .option.wrong .opt-letter { background: var(--sn-red); border-color: var(--sn-red); color: #fff; }
+    .option.show-correct { border-color: var(--sn-green); background: #edfff5; }
+    .option.show-correct .opt-letter { background: var(--sn-green); border-color: var(--sn-green); color: #fff; }
+    .option.disabled { cursor: default; }
+
+    .explanation-box {
+      display: none; margin-top: 20px; padding: 16px; border-radius: 6px;
+      border-left: 4px solid var(--sn-blue); background: #f0f6ff;
+      font-size: 14px; line-height: 1.7;
+    }
+    .explanation-box .exp-title { font-weight: 700; color: var(--sn-blue); margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .quiz-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 8px; }
+    .quiz-actions-right { display: flex; gap: 8px; }
+
+    /* BUTTONS */
+    .btn { padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background 0.15s, opacity 0.15s;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .btn-primary { background: var(--sn-purple); color: #fff; }
+    .btn-primary:hover { background: var(--sn-purple-light); }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    .btn-secondary { background: transparent; color: var(--sn-purple); border: 2px solid var(--sn-purple); }
+    .btn-secondary:hover:not(:disabled) { background: #f5eeff; }
+    .btn-secondary:disabled { opacity: 0.4; cursor: default; }
+    .btn-ghost { background: transparent; color: var(--sn-gray-muted); border: 2px solid var(--sn-gray-border); }
+    .btn-ghost:hover { background: #f5f5f5; }
+
+    /* RESULT SCREEN */
+    #result-screen { display: none; }
+    .result-header { text-align: center; padding-bottom: 24px; border-bottom: 1px solid var(--sn-gray-border); margin-bottom: 28px; }
+    .score-circle {
+      width: 120px; height: 120px; border-radius: 50%;
+      border: 6px solid var(--sn-purple);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .score-circle .score-num { font-size: 32px; font-weight: 800; color: var(--sn-purple); line-height: 1; }
+    .score-circle .score-label { font-size: 12px; color: var(--sn-gray-muted); }
+    .result-header h2 { font-size: 22px; font-weight: 700; }
+    .pass-badge { display: inline-block; margin-top: 8px; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+    .pass-badge.pass { background: #d4f5e5; color: var(--sn-green); }
+    .pass-badge.fail { background: #ffd9de; color: var(--sn-red); }
+    .stat-row { display: flex; gap: 12px; margin-bottom: 28px; }
+    .stat-box { flex: 1; border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 16px; text-align: center; }
+    .stat-box .stat-num { font-size: 24px; font-weight: 700; }
+    .stat-box .stat-label { font-size: 12px; color: var(--sn-gray-muted); margin-top: 4px; }
+    .stat-box.green .stat-num { color: var(--sn-green); }
+    .stat-box.red .stat-num { color: var(--sn-red); }
+    .stat-box.blue .stat-num { color: var(--sn-blue); }
+    .result-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+
+    /* REVIEW */
+    .review-section h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: var(--sn-purple-dark); border-bottom: 2px solid var(--sn-purple); padding-bottom: 8px; }
+    .review-item { border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 18px; margin-bottom: 14px; }
+    .review-item .review-q-num { font-size: 12px; font-weight: 700; color: var(--sn-purple); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .review-item .review-q-text { font-size: 15px; font-weight: 600; margin-bottom: 12px; line-height: 1.5; }
+    .review-answer { font-size: 14px; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; }
+    .review-answer.your { background: #fff0f2; border-left: 3px solid var(--sn-red); }
+    .review-answer.correct { background: #edfff5; border-left: 3px solid var(--sn-green); }
+    .review-exp { margin-top: 10px; font-size: 13px; color: var(--sn-gray-muted); line-height: 1.6; padding: 10px 12px; background: #f8f8fa; border-radius: 4px; }
+
+    /* ===== MOBILE OPTIMISATION ===== */
+    @media (max-width: 600px) {
+      /* ヘッダー */
+      header { padding: 0 16px; height: 50px; }
+      header .logo { font-size: 16px; }
+
+      /* コンテナ */
+      .container { margin: 16px auto; padding: 0 12px; }
+
+      /* カード */
+      .card { padding: 18px 16px; border-radius: 6px; }
+
+      /* スタート画面 */
+      #start-screen h1 { font-size: 20px; }
+      #start-screen .subtitle { font-size: 13px; }
+      .info-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+      .info-item { padding: 10px 6px; }
+      .info-item .num { font-size: 22px; }
+      .info-item .label { font-size: 11px; }
+
+      /* 問題文・選択肢 */
+      .q-text { font-size: 15px; margin-bottom: 16px; }
+      .option { padding: 12px 14px; font-size: 14px; gap: 10px; min-height: 52px; }
+      .option .opt-letter { width: 32px; height: 32px; font-size: 13px; flex-shrink: 0; }
+
+      /* 解説ボックス */
+      .explanation-box { font-size: 13px; padding: 14px; }
+
+      /* ナビゲーションボタンエリア — スマホ向けレイアウト */
+      .quiz-actions {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .quiz-actions-right {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+      }
+      /* 中断ボタンは下に小さく */
+      .quiz-actions > .btn-ghost {
+        order: 3;
+        width: 100%;
+        font-size: 12px;
+        padding: 8px;
+        color: var(--sn-gray-muted);
+        border-color: #e0e0e0;
+      }
+      .btn { font-size: 14px; padding: 13px 10px; border-radius: 6px; }
+      #next-btn, #prev-btn { width: 100%; font-size: 15px; padding: 14px 10px; }
+
+      /* 結果画面 */
+      .stat-row { flex-direction: column; gap: 8px; }
+      .result-header h2 { font-size: 18px; }
+      .result-actions { flex-direction: column; }
+      .result-actions .btn { width: 100%; text-align: center; font-size: 15px; padding: 14px; }
+
+      /* 復習セクション */
+      .review-item { padding: 14px 12px; }
+      .review-item .review-q-text { font-size: 14px; }
+    }
+
+    /* 極小画面 (〜380px) */
+    @media (max-width: 380px) {
+      .info-grid { grid-template-columns: 1fr; gap: 6px; }
+      .q-text { font-size: 14px; }
+      .option { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">ServiceNow</span>
+  <span class="badge">CIS-DF 模擬試験</span>
+</header>
+
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div class="card" id="start-screen">
+    <h1>CIS-DF 認定試験 模擬問題</h1>
+    <p class="subtitle">Certified Implementation Specialist – Discovery &amp; Service Mapping Fundamentals</p>
+    <div class="info-grid">
+      <div class="info-item"><div class="num">80</div><div class="label">問題バンク</div></div>
+      <div class="info-item"><div class="num">40</div><div class="label">出題数（ランダム）</div></div>
+      <div class="info-item"><div class="num">65%</div><div class="label">合格ライン</div></div>
+    </div>
+    <p style="font-size:14px;color:var(--sn-gray-muted);margin-bottom:24px;line-height:1.7;">
+      80問のバンクから毎回40問をランダム抽出して出題します。<br>
+      MIDサーバー・Discovery・CMDB・Service Mapping・Cloud・パターンなど主要トピックを網羅しています。
+    </p>
+    <button class="btn btn-primary" onclick="startQuiz()" style="font-size:15px;padding:12px 32px;">試験を開始する →</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="card" id="quiz-screen">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="q-meta">
+      <span class="q-counter" id="q-counter">問題 1 / 40</span>
+      <span class="q-category" id="q-category">Discovery</span>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options-container"></div>
+    <div class="explanation-box" id="explanation-box">
+      <div class="exp-title">解説</div>
+      <div id="explanation-text"></div>
+    </div>
+    <div class="quiz-actions">
+      <button class="btn btn-ghost" onclick="confirmAbort()">中断する</button>
+      <div class="quiz-actions-right">
+        <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()" disabled>← 前の問題</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>次の問題 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="card" id="result-screen">
+    <div class="result-header">
+      <div class="score-circle">
+        <span class="score-num" id="score-pct">0%</span>
+        <span class="score-label">正解率</span>
+      </div>
+      <h2 id="result-title">結果</h2>
+      <span class="pass-badge" id="pass-badge"></span>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box green"><div class="stat-num" id="stat-correct">0</div><div class="stat-label">正解</div></div>
+      <div class="stat-box red"><div class="stat-num" id="stat-wrong">0</div><div class="stat-label">不正解</div></div>
+      <div class="stat-box blue"><div class="stat-num" id="stat-total">40</div><div class="stat-label">総問題数</div></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-primary" onclick="restartQuiz()">もう一度挑戦</button>
+      <button class="btn btn-secondary" onclick="reviewWrong()">間違えた問題を復習</button>
+      <button class="btn btn-ghost" onclick="showStart()">トップに戻る</button>
+    </div>
+    <div class="review-section" id="review-section" style="display:none;">
+      <h3>間違えた問題の復習（<span id="wrong-count">0</span>問）</h3>
+      <div id="review-items"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  問題バンク（80問）
+// ============================================================
+const questions = [
+  // ========== MID Server (8問) ==========
+  {
+    category: "MID Server",
+    text: "MID Serverの主な役割はどれですか？",
+    options: ["ServiceNowインスタンスに直接アクセスしてデータを処理する","ServiceNowインスタンスとネットワーク上のデバイス間の通信を仲介する","ユーザーのパスワードをリセットする","データベースのバックアップを自動実行する"],
+    answer: 1,
+    explanation: "MID (Management, Instrumentation, and Discovery) Serverは、ServiceNowインスタンスとネットワーク上のデバイスやアプリケーション間の通信を仲介するJavaアプリケーションです。ファイアウォール内側のリソースにアクセスするために使用されます。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Serverがダウンした場合、Discoveryはどうなりますか？",
+    options: ["別のMID Serverが自動的に引き継ぐ","そのMID Serverを使用するDiscoveryスケジュールは実行されない","ServiceNowが直接デバイスにアクセスして継続される","エラーは記録されず、次のスケジュール実行まで待機する"],
+    answer: 1,
+    explanation: "MID Serverがダウンしている場合、そのMID Serverに紐づいているDiscoveryスケジュールは実行できません。MID Serverは冗長性のために複数台構成することが推奨されています。"
+  },
+  {
+    category: "MID Server",
+    text: "MID ServerをServiceNowインスタンスに接続するために必要な最低限の設定はどれですか？",
+    options: ["IPアドレス、MACアドレス、サブネットマスク","インスタンスURL、MID Serverユーザーのユーザー名とパスワード","SSL証明書とOAuthトークン","SNMPコミュニティ文字列とポート番号"],
+    answer: 1,
+    explanation: "MID Serverの設定ファイル(config.xml)には、接続先のServiceNowインスタンスURL、MID Serverユーザーアカウントのユーザー名とパスワードが最低限必要です。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Serverの検証ステータス「Validated」とはどういう意味ですか？",
+    options: ["MID Serverのソフトウェアが最新バージョンである","MID ServerがServiceNowインスタンスに正常に接続されている","MIDサーバー上のJREバージョンが承認されている","MIDサーバーが管理者によって手動で承認されている"],
+    answer: 3,
+    explanation: "MID Serverの「Validated」ステータスは、管理者がそのMID Serverを正式に承認(Validate)したことを示します。新しいMID Serverは自動的にはValidatedにならず、手動での検証が必要です。"
+  },
+  {
+    category: "MID Server",
+    text: "MID ServerのECC Queueにおいて「Output」レコードの役割は何ですか？",
+    options: ["MID ServerからServiceNowインスタンスへの応答データを格納する","ServiceNowインスタンスからMID Serverへの指示を格納する","MID Serverのエラーログを保存する","CMDBへの書き込み命令を保存する"],
+    answer: 1,
+    explanation: "ECC Queue（External Communication Channel Queue）の「Output」レコードは、ServiceNowインスタンスからMID Serverへの命令（Probeの実行指示など）を格納します。「Input」レコードはその逆（MIDからSNへの応答）です。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Serverを複数台配置する主な理由はどれですか？",
+    options: ["CMDBのデータ容量を増やすため","特定のネットワークセグメントへのアクセスや冗長性・負荷分散を実現するため","ServiceNowのライセンス費用を削減するため","Discovery Scheduleを並行して無制限に実行するため"],
+    answer: 1,
+    explanation: "MID Serverを複数台配置する理由は主に3つです。①異なるネットワークセグメント（DMZ、リモートサイト等）へのアクセス、②冗長性の確保（1台が停止しても継続）、③負荷分散によるパフォーマンス向上。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Server Clusterの主な目的はどれですか？",
+    options: ["複数のServiceNowインスタンスを1台のMID Serverで管理する","同一ネットワーク内で複数のMID Serverをグループ化し、負荷分散と高可用性を実現する","MID ServerのJavaヒープサイズを自動調整する","Discovery Scheduleの実行優先度を管理する"],
+    answer: 1,
+    explanation: "MID Server Clusterは、同一ネットワークセグメント内の複数MID Serverをグループ化します。Discoveryの負荷を複数MID Serverに分散し、1台が停止しても他のMID Serverが処理を継続できる高可用性を実現します。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Serverの「Auto-upgrade」機能の説明として正しいのはどれですか？",
+    options: ["MID ServerのOSを自動的にアップグレードする","ServiceNowのメジャーバージョンアップ時にMID Serverソフトウェアが自動的に更新される","MID Serverが毎日自動的に再起動する","MID Serverのクレデンシャルを自動更新する"],
+    answer: 1,
+    explanation: "MID ServerのAuto-upgrade機能により、ServiceNowインスタンスのバージョンアップ（例：Washington → Xanadu）の際に、接続されているMID Serverのソフトウェアが自動的に更新されます。手動でのアップグレード作業が不要になります。"
+  },
+
+  // ========== Discovery - Core (10問) ==========
+  {
+    category: "Discovery",
+    text: "ServiceNow Discoveryで最初に実行されるフェーズはどれですか？",
+    options: ["Classification","Identification","Scanning","Exploration"],
+    answer: 2,
+    explanation: "Discoveryのプロセスは、(1)Scanning → (2)Classification → (3)Identification → (4)Exploration の順で実行されます。Scanningフェーズでは、IPアドレス範囲内で応答するデバイスを検出します。"
+  },
+  {
+    category: "Discovery",
+    text: "DiscoveryのClassificationフェーズでは何を行いますか？",
+    options: ["デバイスのオペレーティングシステムを特定する","CMDBにCI(Configuration Item)を作成する","デバイスのIPアドレスを発見する","認証情報を使用してデバイスへのログインを試みる"],
+    answer: 0,
+    explanation: "ClassificationフェーズではScanningで発見されたデバイスのOSタイプ（Windows、Linux、ネットワーク機器など）を特定します。この情報を基に次のExplorationフェーズでの詳細情報収集方法が決定されます。"
+  },
+  {
+    category: "Discovery",
+    text: "Discovery ScheduleでIPアドレス「10.0.0.0/8」を指定した場合、スキャン対象となるIPアドレスの数はいくつですか？",
+    options: ["256個","65,536個","16,777,216個","4,294,967,296個"],
+    answer: 2,
+    explanation: "/8のサブネットマスクはホスト部が24ビットであることを意味し、2^24 = 16,777,216個のIPアドレスが対象となります。ただし実際には全てのIPにデバイスが存在するわけではありません。"
+  },
+  {
+    category: "Discovery",
+    text: "DiscoveryでTCPポートスキャンを使用する目的は何ですか？",
+    options: ["デバイスのOSバージョンを特定する","デバイスで開いているポートを特定し、実行中のサービスを推測する","デバイスのMACアドレスを取得する","デバイスのCPU使用率を監視する"],
+    answer: 1,
+    explanation: "TCPポートスキャンにより、ターゲットデバイスで開いているポートを特定できます。例えばポート22(SSH)、443(HTTPS)、3306(MySQL)などの開放状況から実行中のサービスを推測し、適切なProbeを選択します。"
+  },
+  {
+    category: "Discovery",
+    text: "「Agentless Discovery」の特徴として正しいのはどれですか？",
+    options: ["ターゲットデバイスにエージェントソフトウェアをインストールする必要がある","MID ServerとSSH/WMI/SNMPなどを使用してエージェント不要でデバイス情報を収集する","クラウドリソースのみを対象とする","リアルタイムでCIの変更を検出できる"],
+    answer: 1,
+    explanation: "Agentless Discoveryは、ターゲットデバイスにエージェントソフトウェアをインストールせず、MID ServerからSSH、WMI、SNMPなどのプロトコルを使ってリモートでデバイス情報を収集します。デプロイが容易ですが、ファイアウォールポートの開放が必要です。"
+  },
+  {
+    category: "Discovery",
+    text: "Discovery Scheduleの「Throttle（スロットル）」設定の目的は何ですか？",
+    options: ["Discoveryを特定の時間帯のみ実行するように制限する","MID Serverが同時に実行できるプローブの数を制限してネットワーク負荷を軽減する","CMDBへの書き込み速度を制限する","特定のIPアドレスをDiscovery対象から除外する"],
+    answer: 1,
+    explanation: "Throttle設定を使用すると、MID Serverが同時に実行できるプローブの最大数を制限できます。これによりネットワークとターゲットデバイスへの負荷を軽減し、本番環境への影響を最小化します。"
+  },
+  {
+    category: "Discovery",
+    text: "Discovery実行後に「CI Reclassification」が発生する原因として正しいのはどれですか？",
+    options: ["CMDBのディスク容量が不足した場合","発見されたCIのタイプが既存レコードのCIクラスと一致しない場合","MID Serverのバージョンが古い場合","クレデンシャルの有効期限が切れた場合"],
+    answer: 1,
+    explanation: "CI Reclassificationは、Discoveryが既存のCIレコードを再発見した際に、現在のCIクラスと一致しない新しいクラスと判断した場合に発生します。例えばGeneralからWindowsServerへの再分類などが該当します。"
+  },
+  {
+    category: "Discovery",
+    text: "「Horizontal Discovery」と「Top-down Discovery（Service Mapping）」の違いとして正しいのはどれですか？",
+    options: ["Horizontal DiscoveryはIPスキャンでCI単体を発見し、Top-downはアプリケーション視点でCI間の関係を発見する","Horizontal DiscoveryはWindows専用で、Top-downはLinux専用である","Top-downはオンプレミス専用で、Horizontal DiscoveryはクラウドCI専用である","両者は同じ機能であり、名前が異なるだけである"],
+    answer: 0,
+    explanation: "Horizontal Discoveryは従来のIPスキャンベースで個々のデバイス・CIを発見する方式です。Top-down Discovery（Service Mapping）はビジネスサービスを起点にアプリケーションとその依存関係（CI間のリレーション）を発見します。"
+  },
+  {
+    category: "Discovery",
+    text: "「Agent Client Collector（ACC）」はどのような場合に使用されますか？",
+    options: ["MID Serverが到達できないファイアウォール外のデバイスを発見する場合","SNMPプロトコルでネットワーク機器を発見する場合","Azureのクラウドリソースを発見する場合","CMDBのデータを外部システムにエクスポートする場合"],
+    answer: 0,
+    explanation: "Agent Client Collector（ACC）は、MID Serverが直接到達できない環境（DMZ、リモートサイト、クラウド上のVM等）にインストールするエージェントです。エージェントが情報を収集してMID Serverに送信します。"
+  },
+  {
+    category: "Discovery",
+    text: "Discovery実行のログを確認するための正しい方法はどれですか？",
+    options: ["System Logs > All から確認する","Discovery > Discovery Status から対象の実行履歴を開いて確認する","MID Serverの管理コンソールから確認する","CMDB > Import Sets から確認する"],
+    answer: 1,
+    explanation: "Discovery実行のログはDiscovery > Discovery Status（またはDiscovery Status Records）から確認できます。各Discovery実行の詳細ログ、エラー、警告、発見されたCIの情報が記録されています。"
+  },
+
+  // ========== Credentials (5問) ==========
+  {
+    category: "Credentials",
+    text: "Discoveryで使用されるCredentialレコードの目的は何ですか？",
+    options: ["ServiceNowユーザーのログイン情報を保存する","Discoveryがデバイスにアクセスするための認証情報を安全に保存する","MID ServerとServiceNowインスタンス間の通信を暗号化する","SNMPトラップの受信設定を管理する"],
+    answer: 1,
+    explanation: "Credentialレコードは、MID ServerがDiscovery対象デバイスにアクセスするために必要なユーザー名・パスワード・SSH鍵などの認証情報を暗号化して安全に保存します。"
+  },
+  {
+    category: "Credentials",
+    text: "SSHクレデンシャルを使用したLinuxサーバーのDiscoveryで、パスワード認証の代わりに推奨される認証方式はどれですか？",
+    options: ["SNMPv3認証","SSH公開鍵認証","Kerberos認証","NTLM認証"],
+    answer: 1,
+    explanation: "LinuxサーバーへのSSH接続では、パスワード認証よりもSSH公開鍵認証（SSH Key-based authentication）がセキュリティ面で推奨されます。ServiceNowのCredentialレコードでSSH秘密鍵を設定できます。"
+  },
+  {
+    category: "Credentials",
+    text: "WMI（Windows Management Instrumentation）クレデンシャルはどのような場合に使用されますか？",
+    options: ["LinuxサーバーへのSSHアクセス","Windowsデバイスの情報収集","ネットワーク機器のSNMPポーリング","データベースサーバーへのJDBC接続"],
+    answer: 1,
+    explanation: "WMIクレデンシャルはWindowsデバイスのDiscoveryに使用されます。Windowsのシステム情報、インストール済みソフトウェア、実行中のプロセスなどはWMI経由で収集されます。"
+  },
+  {
+    category: "Credentials",
+    text: "Discovery Credentialの「Applicability」（適用範囲）の設定として正しいのはどれですか？",
+    options: ["CMDBのCIクラスごとにクレデンシャルを割り当てる設定","特定のIPアドレス範囲またはTagに対してクレデンシャルを適用する設定","MID Serverごとにクレデンシャルを割り当てる設定","Discovery Scheduleごとに異なるクレデンシャルを指定する設定"],
+    answer: 1,
+    explanation: "CredentialのApplicability設定により、特定のIPアドレス範囲（例：192.168.1.0/24）やタグに一致するデバイスにのみそのクレデンシャルを試行するよう制限できます。これにより認証試行を最適化し、アカウントロックを防ぎます。"
+  },
+  {
+    category: "Credentials",
+    text: "SNMPv3クレデンシャルがSNMPv1/v2cと異なる主な点はどれですか？",
+    options: ["対応するMIBの数が多い","認証と暗号化をサポートしセキュリティが強化されている","処理速度が速い","ネットワーク機器のみに使用できる"],
+    answer: 1,
+    explanation: "SNMPv3はSNMPv1/v2cと比べて、ユーザー認証（MD5/SHA）とデータ暗号化（DES/AES）をサポートしており、セキュリティが大幅に強化されています。v1/v2cはコミュニティ文字列という平文の認証のみで脆弱です。"
+  },
+
+  // ========== CMDB (8問) ==========
+  {
+    category: "CMDB",
+    text: "CMDBにおいてCIの「重複」を防ぐために使用される識別フィールドはどれですか？",
+    options: ["sys_id","Identification Rules（識別ルール）","Discovery Source","Operational Status"],
+    answer: 1,
+    explanation: "CMDB Identification and Reconciliation（IRE）エンジンは、Identification Rulesを使用して同一CIの重複作成を防ぎます。例えばシリアル番号やFQDNを使ってCIの同一性を判断します。"
+  },
+  {
+    category: "CMDB",
+    text: "CMDBの「Reconciliation」プロセスでは何が行われますか？",
+    options: ["すべてのCIを削除して再作成する","複数のDiscoveryソースからのデータを統合し、最も信頼性の高い情報でCIを更新する","CMDBとActive Directoryを同期する","古いCIレコードを自動的にアーカイブする"],
+    answer: 1,
+    explanation: "Reconciliationは、複数のDiscoveryツール（ServiceNow Discovery、SCCM、その他のソース）から来る情報を統合します。Reconciliation Prioritiesにより、どのソースのデータが最終的にCIフィールドに反映されるかが決まります。"
+  },
+  {
+    category: "CMDB",
+    text: "「CI Class Manager」の主な用途はどれですか？",
+    options: ["CMDBのCIクラス（テーブル）の構造を確認・カスタマイズする","DiscoveryのIPスキャン範囲を管理する","MID Serverのパフォーマンスを監視する","ユーザーロールとCMDBのアクセス権限を設定する"],
+    answer: 0,
+    explanation: "CI Class Managerは、CMDBのCI階層（cmdb_ciテーブルとその子クラス）を視覚的に確認・管理するためのツールです。CIクラスの属性、識別ルール、調整ルールをクラスごとに設定できます。"
+  },
+  {
+    category: "CMDB",
+    text: "「CMDB Health Dashboard」が測定する主要な指標として正しいのはどれですか？",
+    options: ["MID Serverのネットワーク帯域幅使用率","CIの正確性、完全性、コンプライアンス","Discoveryスケジュールの実行頻度","ServiceNowユーザーのアクティビティ状況"],
+    answer: 1,
+    explanation: "CMDB Health Dashboardは、CMDBデータの品質を「正確性（Correctness）」「完全性（Completeness）」「コンプライアンス（Compliance）」の3つの観点で測定・表示します。データ品質の向上と維持に活用されます。"
+  },
+  {
+    category: "CMDB",
+    text: "CMDBにおけるCI間の「Relationship」の種類として正しいのはどれですか？",
+    options: ["Contains、Connects to、Runs on、Depends on","Child of、Parent of のみ","Linked、Unlinked のみ","Primary、Secondary、Tertiary"],
+    answer: 0,
+    explanation: "CMDBのCI間リレーションシップには「Contains（包含）」「Connects to（接続）」「Runs on（稼働）」「Depends on（依存）」「Hosted on」など様々な種類があります。これらによりサービスマップのトポロジーが形成されます。"
+  },
+  {
+    category: "CMDB",
+    text: "IRE（Identification and Reconciliation Engine）の「Identification Rules」でよく使用される識別子として正しいのはどれですか？",
+    options: ["CIのレコード作成日時","シリアル番号、FQDN、MACアドレスなどのユニーク属性","CIを発見したMID Server名","CIの最終更新者"],
+    answer: 1,
+    explanation: "IRE Identification Rulesでは、シリアル番号（Serial Number）、FQDN（完全修飾ドメイン名）、MACアドレスなどのCIを一意に識別できる属性を使用して、同一CIの重複レコード作成を防ぎます。"
+  },
+  {
+    category: "CMDB",
+    text: "CMDBの「Stale CI（陳腐化したCI）」の問題に対処するための推奨アプローチはどれですか？",
+    options: ["CMDBを定期的に完全削除して再構築する","Discoveryの定期実行とCI Staleness Ruleを設定して、長期間更新されていないCIを特定・対処する","CIの更新を手動のみに制限する","すべてのCIに無期限の有効期限を設定する"],
+    answer: 1,
+    explanation: "CI Staleness Ruleを使用すると、一定期間Discoveryで更新されなかったCIを「古い」と判断しフラグを立てることができます。定期的なDiscovery実行と組み合わせることで、廃止されたデバイスのCIを適切に管理できます。"
+  },
+  {
+    category: "CMDB",
+    text: "「Discovery Source」フィールドの目的は何ですか？",
+    options: ["CIを最初にCMDBに登録したユーザー名を記録する","CIデータがどのツール・システムから提供されたかを記録する","Discoveryを実行したMID Server名を記録する","CIの発見に使用したIPアドレスを記録する"],
+    answer: 1,
+    explanation: "Discovery Sourceフィールドは、CIデータがServiceNow Discovery、SCCM、BMC Atrium、手動入力など、どのソースから提供されたかを記録します。Reconciliation Priorityの設定でどのソースのデータを優先するかを制御します。"
+  },
+
+  // ========== Probes & Sensors (4問) ==========
+  {
+    category: "Probes & Sensors",
+    text: "Discoveryにおける「Probe」と「Sensor」の役割の違いとして正しいのはどれですか？",
+    options: ["ProbeはLinux専用、SensorはWindows専用のスクリプトである","Probeはデバイスからデータを収集し、SensorはProbeの結果を解析してCMDBを更新する","ProbeはCMDBを更新し、Sensorはアラートを生成する","両方とも同じ機能を持つが、異なるプラットフォーム向けに設計されている"],
+    answer: 1,
+    explanation: "ProbeはMID Serverを介してターゲットデバイスからデータを収集するスクリプトです。SensorはProbeが収集した生データを解析・変換してCMDBにCI情報として書き込むスクリプトです。"
+  },
+  {
+    category: "Probes & Sensors",
+    text: "「SNMP Probe」はどのような情報を収集しますか？",
+    options: ["Windowsレジストリの情報","ネットワーク機器のMIB（管理情報ベース）データ","LinuxサーバーのSSHコマンド出力","データベースのスキーマ情報"],
+    answer: 1,
+    explanation: "SNMP ProbeはSNMPプロトコルを使用してネットワーク機器（ルーター、スイッチ、プリンターなど）のMIBデータを収集します。SNMPv1/v2cではコミュニティ文字列、SNMPv3では認証情報が必要です。"
+  },
+  {
+    category: "Probes & Sensors",
+    text: "「Windows - Installed Software」Probeの実行方法として正しいのはどれですか？",
+    options: ["SNMPを使用してWindowsのMIBから取得する","WMIまたはPowerShellを使用してインストール済みアプリケーション情報を収集する","SSHでWindowsに接続してコマンドを実行する","JDBCでWindowsのレジストリデータベースに接続する"],
+    answer: 1,
+    explanation: "WindowsのインストールソフトウェアはWMI（Win32_Product等のWMIクラス）またはPowerShellを使用して収集します。WMI認証情報がCredentialレコードとして設定されている必要があります。"
+  },
+  {
+    category: "Probes & Sensors",
+    text: "「Run Script」Probeを使用する場面として最も適切なのはどれですか？",
+    options: ["標準のProbeでは対応できないカスタムアプリケーションや独自プロセスの情報を収集する場合","Discoveryを高速化したい場合","CMDBデータを外部システムにエクスポートする場合","SNMPトラップを受信する場合"],
+    answer: 0,
+    explanation: "Run Script Probeは、標準的なProbeではカバーできないカスタムアプリケーションや特殊なプロセスの情報収集に使用します。カスタムスクリプト（Jython等）を記述してMID Server上で実行させることができます。"
+  },
+
+  // ========== Service Mapping (7問) ==========
+  {
+    category: "Service Mapping",
+    text: "Service Mappingの「Entry Point」とは何ですか？",
+    options: ["CMDBにデータを登録するための入力フォーム","サービスマップのトポロジー探索を開始する起点となるCI","MID Serverがネットワークスキャンを開始するIPアドレス","ServiceNowのService Portalへのアクセスポイント"],
+    answer: 1,
+    explanation: "Service MappingのEntry Pointは、トップダウンでサービスの依存関係を探索する起点となるCI（通常はロードバランサーやWebサーバーのIP/ポート）です。Entry Pointから下位のCIへ再帰的に依存関係を発見します。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingで「パターン」が使用される目的は何ですか？",
+    options: ["DiscoveryのIPスキャン範囲を定義する","特定のアプリケーションやサービスのCIとリレーションを発見するロジックを定義する","CMDBのデータ品質ルールを設定する","MID Serverのロードバランシング設定を行う"],
+    answer: 1,
+    explanation: "パターン（Pattern）はService Mappingで特定のアプリケーション（Apache、Tomcat、Oracle DBなど）のプロセス、ポート、設定ファイルを検出し、CIとリレーションとしてCMDBに記録するためのロジックを定義します。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingにおける「Application Dependency Map」の主な目的はどれですか？",
+    options: ["ネットワークトポロジーを視覚化する","ビジネスサービスとその基盤となるITコンポーネントの依存関係を視覚的に表示する","CMDBの変更履歴を追跡する","ITILプロセスのワークフローを図示する"],
+    answer: 1,
+    explanation: "Application Dependency Map（サービスマップ）は、ビジネスサービス（例：オンラインバンキング）とその基盤となるアプリケーションサーバー、データベース、ネットワーク機器などの依存関係を視覚的なマップとして表示します。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingの「Candidate CI」とはどういう意味ですか？",
+    options: ["Discoveryで発見されたが、まだCMDBに追加されていない仮CIレコード","Discoveryの対象候補となるIPアドレスリスト","Service Mappingで使用するパターンの候補リスト","CMDBから削除予定のCI"],
+    answer: 0,
+    explanation: "Candidate CIは、Service MappingまたはDiscoveryで発見されたが、CIクラスの識別ルールによる確認が完了する前の暫定CIレコードです。識別完了後に正式なCIとしてCMDBに登録されます。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingの「Traffic-based Discovery」の特徴として正しいのはどれですか？",
+    options: ["SNMPトラフィックを分析してネットワーク機器を発見する","実際のネットワークトラフィックを分析してアプリケーション間の依存関係を自動発見する","MID Serverのネットワーク使用量を監視する","ファイアウォールのログを解析してセキュリティ脅威を発見する"],
+    answer: 1,
+    explanation: "Traffic-based Discovery（旧称：Itential）は、実際のネットワークフロー（NetFlow、sFlowなど）を解析して、アプリケーション間の実際の通信依存関係を自動的に発見します。パターンが未定義のアプリケーションの依存関係も発見できます。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingで「Tag-based Discovery」が役立つシナリオはどれですか？",
+    options: ["レガシーな物理サーバーを発見する場合","クラウド環境（AWS、Azure等）のリソースタグを使ってCIとサービスを自動マッピングする場合","SNMPポーリングでネットワーク機器を管理する場合","オンプレミスのWindowsサーバーのみを対象とする場合"],
+    answer: 1,
+    explanation: "Tag-based Discoveryは、AWSタグ（例：Environment=Production, Service=WebApp）やAzureタグを利用して、クラウドリソースをビジネスサービスに自動的にマッピングします。クラウド環境のサービスマップ作成を効率化します。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingの「Connection Step」はどのような機能を持ちますか？",
+    options: ["CMDBへのデータ書き込みを行う","特定のプロトコル（SSH、WMI等）を使ってターゲットデバイスに接続する","IPアドレスのスキャンを実行する","MID Server間のフェイルオーバーを設定する"],
+    answer: 1,
+    explanation: "Connection Stepは、パターン内でSSH、WMI、SNMP、Shell等のプロトコルを使ってターゲットデバイスに接続するための手順です。接続に使用するクレデンシャルもConnection Stepで指定します。"
+  },
+
+  // ========== Patterns (4問) ==========
+  {
+    category: "Patterns",
+    text: "Discoveryパターン（Discovery Pattern）の利点として最も適切なのはどれですか？",
+    options: ["MID Serverなしでクラウドリソースを発見できる","プローブ/センサーよりも柔軟にカスタムCIタイプの発見ロジックを定義できる","SNMPを使用せずにネットワーク機器を発見できる","Discoveryを完全にコードなしで設定できる"],
+    answer: 1,
+    explanation: "Discovery Patternは、従来のProbe/Sensorよりも柔軟で拡張性の高い方法でCIの発見ロジックを定義できます。GUI上でステップをビジュアル的に構築でき、複雑なアプリケーション発見にも対応できます。"
+  },
+  {
+    category: "Patterns",
+    text: "パターンの「Parse Step」はどのような機能を持ちますか？",
+    options: ["コマンドの実行結果をテキストからCIの属性値として抽出・解析する","リモートデバイスにSSHで接続する","CMDBにCIレコードを作成する","別のパターンを呼び出す"],
+    answer: 0,
+    explanation: "Parse StepはコマンドやAPIの実行結果（テキスト、JSON、XML等）を解析して、必要な情報（CIの属性値）を抽出します。正規表現やJSONパスなどを使って特定の値を取り出すことができます。"
+  },
+  {
+    category: "Patterns",
+    text: "「Identification Step」（パターン内）の役割として正しいのはどれですか？",
+    options: ["デバイスのIPアドレスを特定する","発見されたCIデータをIREエンジンに渡してCMDBの既存レコードと照合・作成する","SSH認証を実行する","パターンの実行ログを記録する"],
+    answer: 1,
+    explanation: "パターン内のIdentification StepはIRE（Identification and Reconciliation Engine）を呼び出し、収集したCIデータをCMDBの既存レコードと照合します。重複がなければ新規作成、既存レコードがあれば更新します。"
+  },
+  {
+    category: "Patterns",
+    text: "「Pattern Designer」の主な機能はどれですか？",
+    options: ["CMDBのスキーマを設計するツール","GUIベースでDiscovery/Service Mappingパターンを作成・編集・テストするツール","MID Serverの設定を管理するツール","Discovery Scheduleのカレンダーを管理するツール"],
+    answer: 1,
+    explanation: "Pattern Designerは、Discovery PatternやService Mappingパターンをコードを書かずにGUIで作成・編集できるツールです。ステップのドラッグ&ドロップ配置、テスト実行、デバッグ機能を提供します。"
+  },
+
+  // ========== Cloud Discovery (5問) ==========
+  {
+    category: "Cloud Discovery",
+    text: "ServiceNowでAWSリソースをDiscoveryするために必要なものはどれですか？",
+    options: ["各AWSサーバーへのSSHアクセス","IAMロールまたはアクセスキーを使用したAWS APIへのアクセス権限","オンプレミスのMID Serverは不要","AWS CloudTrailの有効化のみ"],
+    answer: 1,
+    explanation: "AWS DiscoveryにはAWS APIへのアクセスが必要です。ServiceNowはIAMロール（EC2インスタンス上のMID Server使用時）またはIAMアクセスキー/シークレットキーを使ってAWS APIを呼び出し、EC2、RDS、S3などのリソースを発見します。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "Azure Discoveryの設定で必要な情報として正しい組み合わせはどれですか？",
+    options: ["AzureポータルのIPアドレスとSNMPコミュニティ文字列","テナントID、クライアントID（アプリケーションID）、クライアントシークレット","AzureサブスクリプションIDのみ","Azure Active DirectoryのLDAP設定"],
+    answer: 1,
+    explanation: "Azure DiscoveryにはAzure ADアプリ登録の情報（テナントID、クライアントID、クライアントシークレット）が必要です。これらを使ってServiceNowがAzure Resource Manager APIを呼び出します。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "AWS DiscoveryでVPC（Virtual Private Cloud）内のEC2インスタンスにSSHアクセスするために推奨される構成はどれですか？",
+    options: ["EC2インスタンスにパブリックIPを割り当てて直接接続する","VPC内にMID ServerをデプロイしてEC2インスタンスにプライベートIPで接続する","AWSコンソールからServiceNowに手動でデータをエクスポートする","EC2インスタンスにACC（Agent Client Collector）をインストールする"],
+    answer: 1,
+    explanation: "VPC内のEC2インスタンスにアクセスするには、同一VPC内にMID Serverをデプロイする方法が推奨されます。MID ServerがVPC内のプライベートIPを使ってEC2インスタンスに直接アクセスできます。パブリックIP公開は不要でセキュリティ面でも優れています。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "Google Cloud Platform（GCP）のDiscoveryに必要な認証方式はどれですか？",
+    options: ["GCPのrootアカウントのパスワード","サービスアカウントのJSONキーファイルまたはWorkload Identity","SNMPコミュニティ文字列","GCPコンソールのAPIキーのみ"],
+    answer: 1,
+    explanation: "GCP DiscoveryにはGCPサービスアカウントの認証が必要です。サービスアカウントのJSONキーをServiceNowのCredentialレコードに設定するか、GCE上のMID ServerではWorkload Identityを使用します。適切なIAMロール（Viewer等）が必要です。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "マルチクラウド環境（AWS + Azure + GCP）をServiceNow Discoveryで管理する際の推奨アプローチはどれですか？",
+    options: ["クラウドプロバイダーごとに別々のServiceNowインスタンスを使用する","各クラウド用の設定（Credential、Discovery Schedule）をServiceNow上で個別に設定し、統一されたCMDBで管理する","マルチクラウドはServiceNow Discoveryではサポートされない","すべてのクラウドリソースを手動でCMDBに登録する"],
+    answer: 1,
+    explanation: "ServiceNow Discoveryは AWS、Azure、GCP を含む主要クラウドプロバイダーをサポートします。各クラウドに対してCredentialレコードとCloud Discovery Scheduleを個別に設定し、発見されたすべてのリソースを統一されたCMDBで管理できます。"
+  },
+
+  // ========== ITOM (4問) ==========
+  {
+    category: "ITOM",
+    text: "ServiceNow ITOMが提供する主な機能セットとして正しいのはどれですか？",
+    options: ["HR Service Delivery、IT財務管理、顧客サービス管理","Discovery、Event Management、Service Mapping、Orchestration","GRC、セキュリティオペレーション、監査管理","ITSM、ITAM、Problem Management"],
+    answer: 1,
+    explanation: "ITOM（IT Operations Management）は、Discovery（CI発見）、Event Management（イベント管理）、Service Mapping（サービスマッピング）、Orchestration（自動化）などのITオペレーション機能を提供します。"
+  },
+  {
+    category: "ITOM",
+    text: "「Health Log Analytics（HLA）」の主な目的は何ですか？",
+    options: ["CMDBのデータ品質スコアを算出する","機械学習を使用してログデータからITインフラの異常を検出する","MID Serverのヘルスチェックを自動実行する","IT担当者の作業ログを監査する"],
+    answer: 1,
+    explanation: "Health Log Analytics（HLA）は、AIと機械学習を使用して大量のログデータを分析し、インフラの異常や問題を自動検出します。Event Managementと連携してITオペレーションの可視性を向上させます。"
+  },
+  {
+    category: "ITOM",
+    text: "ServiceNow Orchestrationの主な用途はどれですか？",
+    options: ["CMDBのデータを手動で更新する","ITインフラの変更・プロビジョニング・修復などのタスクを自動実行する","インシデントチケットを自動的に作成する","ユーザーのパスワードポリシーを設定する"],
+    answer: 1,
+    explanation: "ServiceNow Orchestrationは、MID Serverを通じてITインフラ上でスクリプトやコマンドを実行し、プロビジョニング、設定変更、修復などのタスクを自動化します。ITOMの重要なコンポーネントの一つです。"
+  },
+  {
+    category: "ITOM",
+    text: "「ITOM Visibility」の主な提供価値はどれですか？",
+    options: ["ITシステムのセキュリティ脆弱性を自動修正する","ITインフラ全体のリアルタイムな可視化とCMDBデータの正確性維持","ユーザーのITサービスリクエストを自動承認する","IT予算の自動配分を行う"],
+    answer: 1,
+    explanation: "ITOM Visibilityは、Discovery、Service Mapping、Event Managementを組み合わせてITインフラ全体をリアルタイムで可視化します。正確なCMDBデータを維持し、サービスへの影響を迅速に把握できます。"
+  },
+
+  // ========== Troubleshooting (4問) ==========
+  {
+    category: "Troubleshooting",
+    text: "Discoveryで「Authentication Error」が発生した場合の最初の確認事項はどれですか？",
+    options: ["ターゲットデバイスのファイアウォールポートが開いているか確認する","使用しているCredentialレコードのユーザー名・パスワードが正しいか確認する","MID Serverのログレベルをデバッグに変更する","Discovery Scheduleを削除して再作成する"],
+    answer: 1,
+    explanation: "Authentication Errorは、ターゲットデバイスへのログインに失敗したことを示します。まずCredentialレコードの認証情報（ユーザー名・パスワード・SSH鍵）が正しく設定されているか確認します。"
+  },
+  {
+    category: "Troubleshooting",
+    text: "MID ServerのECC Queue（External Communication Channel）でメッセージが「Error」ステータスになった場合、何を確認すべきですか？",
+    options: ["ServiceNowのライセンス状態","ECCキューのエラーメッセージと対応するMID Serverのagent.logファイル","CMDBの利用可能ストレージ容量","Discovery Scheduleのタイムゾーン設定"],
+    answer: 1,
+    explanation: "ECCキューのエラーを診断するには、エラーメッセージ内容とMID Serverの「agent.log」ファイルを確認します。agent.logにはMID Serverの通信エラーや実行エラーの詳細が記録されています。"
+  },
+  {
+    category: "Troubleshooting",
+    text: "Discoveryで特定のデバイスが毎回「No credentials found」エラーになる場合の対処法として最も適切なのはどれですか？",
+    options: ["そのデバイスをDiscovery対象から除外する","対象デバイスのIPアドレス範囲に適用されるCredentialレコードを作成・確認する","Discovery Scheduleの実行間隔を変更する","MID Serverを再起動する"],
+    answer: 1,
+    explanation: "「No credentials found」エラーは、対象デバイスに適用できるCredentialレコードが見つからないことを意味します。対象デバイスのIPアドレスをカバーするApplicability設定を持つCredentialレコードを作成・確認する必要があります。"
+  },
+  {
+    category: "Troubleshooting",
+    text: "MID Serverのステータスが「Down」になっている場合の最初の確認手順として正しいのはどれですか？",
+    options: ["ServiceNowインスタンスを再起動する","MID ServerのOSでMID Serverプロセス（サービス）が起動しているか確認し、agent.logでエラーを確認する","Discovery Scheduleを再作成する","すべてのCMDB CIを削除して再Discoveryする"],
+    answer: 1,
+    explanation: "MID Serverが「Down」の場合、MID ServerホストOSでサービスが実行中かを確認し（Windows: サービス管理、Linux: systemctlなど）、agent.logで起動エラーの詳細を確認します。JREのバージョン問題、ネットワーク接続問題、認証情報の誤りが主な原因です。"
+  },
+
+  // ========== Integration (4問) ==========
+  {
+    category: "Integration",
+    text: "「Service Graph Connector」の目的として正しいのはどれですか？",
+    options: ["ServiceNowのグラフィカルなレポートツール","サードパーティツール（Ansible、Puppet等）からCMDBにデータを取り込むための事前構築された統合","Service Mappingのビジュアルエディタ","MID ServerのヘルスメトリクスをグラフでMonitorするツール"],
+    answer: 1,
+    explanation: "Service Graph Connectorは、Ansible、Puppet、Chef、VMware vCenter等のサードパーティ構成管理ツールのデータをCMDBに統合するための事前構築されたコネクターです。IRE（識別・調整エンジン）と連携して重複を防ぎます。"
+  },
+  {
+    category: "Integration",
+    text: "ServiceNow IntegrationHub（IntHub）とDiscoveryを組み合わせて使用する目的はどれですか？",
+    options: ["CMDBのデータをExcelにエクスポートする","外部APIやシステムとのデータ連携を自動化し、CI情報の収集範囲を拡張する","MID Serverのソフトウェアを自動更新する","Discovery Scheduleをカレンダーで管理する"],
+    answer: 1,
+    explanation: "IntegrationHubは外部API（REST、SOAP等）との連携を簡素化するプラットフォームです。Discoveryと組み合わせることで、ServiceNow Discoveryでは直接取得できない外部システムのCI情報を収集・統合できます。"
+  },
+  {
+    category: "Integration",
+    text: "「Import Set」を使用してCMDBにデータを取り込む際、IREエンジンを使用するために必要な設定はどれですか？",
+    options: ["Import SetのソーステーブルをcmdbテーブルとTEMPテーブルに設定する","Transform MapでCMDB APIまたはIdentification and Reconciliation APIを使用するよう設定する","Import Set Tableを直接cmdb_ciに設定する","MID Serverを経由してImport Setを実行する"],
+    answer: 1,
+    explanation: "Import SetからCMDBにデータを取り込む際にIREエンジンを使用するには、Transform MapでCMDB APIまたはIRE API（identifyCI等）を呼び出す設定が必要です。これにより重複チェックと調整が適切に行われます。"
+  },
+  {
+    category: "Integration",
+    text: "SCCM（Microsoft System Center Configuration Manager）のデータをServiceNow CMDBに統合する際の推奨方法はどれですか？",
+    options: ["SCCMのデータベースに直接JDBCで接続してデータを取得する","ServiceNow SCCM用のService Graph Connectorを使用する","SCCM担当者が手動でCMDBにデータを入力する","SCCMのレポートをPDFでエクスポートしてServiceNowに添付する"],
+    answer: 1,
+    explanation: "MicrosoftのSCCMデータをCMDBに統合する際は、ServiceNowが提供するSCCM用Service Graph Connectorを使用することが推奨されます。IRE対応の正しい方法でCIデータを取り込み、既存CIとの重複を防ぎます。"
+  },
+
+  // ========== 追加問題（新規10問） ==========
+  {
+    category: "Discovery",
+    text: "Discovery Scheduleの「Quick Discovery」と通常のDiscoveryスケジュールの違いはどれですか？",
+    options: ["Quick Discoveryは特定の単一IPアドレスを即時スキャンし、通常スケジュールは定期的にIP範囲全体をスキャンする","Quick Discoveryはクラウド専用で、通常スケジュールはオンプレミス専用","Quick Discoveryは認証不要で、通常スケジュールは認証が必要","Quick Discoveryは結果をCMDBに保存しない"],
+    answer: 0,
+    explanation: "Quick Discoveryは特定のIPアドレスまたはホスト名を指定して即座に実行できる単発スキャンです。トラブルシューティングや特定デバイスのCI更新に便利です。通常のDiscovery Scheduleは定期実行で広いIP範囲を対象とします。"
+  },
+  {
+    category: "CMDB",
+    text: "「CMDB Baseline」機能の主な用途はどれですか？",
+    options: ["CMDBのデータを定期的に外部ストレージにバックアップする","特定時点のCI構成情報をスナップショットとして保存し、後から変更を比較・追跡する","CMDBのパフォーマンスベースラインを測定する","新しいCMDBインスタンスの初期設定を行う"],
+    answer: 1,
+    explanation: "CMDB Baselineは、特定時点のCI構成情報をスナップショットとして保存します。変更管理や問題管理において「以前と今の差分」を確認したい場合に活用します。リリース前後の変更比較や障害調査に役立ちます。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service Mappingで「Mapping Assist」はどのような機能ですか？",
+    options: ["サービスマップを自動的に作成するAI機能","手動でサービスマップを編集・修正するためのGUIツール","Service Mappingのパフォーマンスを監視するツール","パターンの自動生成ツール"],
+    answer: 1,
+    explanation: "Mapping Assistは、自動発見では検出できなかったCIやリレーションをSME（Subject Matter Expert）が手動で追加・修正できるGUIツールです。自動Discoveryと手動修正を組み合わせてより正確なサービスマップを作成できます。"
+  },
+  {
+    category: "Discovery",
+    text: "「Discovery Exclusions」リストの目的はどれですか？",
+    options: ["Discoveryの実行時間を制限する","特定のIPアドレスやホスト名をDiscovery対象から除外する","CMDBからCIを削除する","MID ServerのIPアドレスをブロックリストに登録する"],
+    answer: 1,
+    explanation: "Discovery Exclusionsリストに登録されたIPアドレス・ホスト名・サブネットは、Discoveryスキャン対象から除外されます。Discoveryを実行してはいけないシステム（テスト環境、機密サーバー等）を指定するために使用します。"
+  },
+  {
+    category: "Patterns",
+    text: "「Library Pattern」とはどのような機能ですか？",
+    options: ["ServiceNow Storeからダウンロードできる有料パターン","複数のパターンから共通して呼び出せる再利用可能なパターンモジュール","過去の実行履歴が保存されたパターンのアーカイブ","ServiceNow社が提供する公式パターンのみを指す"],
+    answer: 1,
+    explanation: "Library Patternは、複数のDiscovery/Service Mappingパターンから共通の処理として呼び出せる再利用可能なパターンです。例えば「OSバージョン取得」などの共通処理をLibrary Patternとして定義し、複数のパターンから参照できます。"
+  },
+  {
+    category: "ITOM",
+    text: "「Event Management」においてアラートを相関分析（Correlation）する目的はどれですか？",
+    options: ["イベントを時系列でソートする","複数の関連するアラートをグループ化して根本原因を特定しやすくする","すべてのアラートを自動クローズする","アラートをメールで担当者に転送する"],
+    answer: 1,
+    explanation: "Event ManagementのCorrelation機能は、関連する複数のアラート（例：同じサーバーのCPU、メモリ、ディスクのアラート）をグループ化して1つのインシデントに集約します。アラートノイズを削減し、根本原因の特定を効率化します。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "ServiceNow の「Cloud Management Platform（CMP）」とDiscoveryの関係として正しいのはどれですか？",
+    options: ["CMPはDiscoveryを完全に置き換える","CMPはクラウドリソースのプロビジョニングを管理し、DiscoveryはそのリソースをCMDBに記録して可視化する","CMPはオンプレミスのみ対応で、DiscoveryはクラウドのみCA対応","両者は独立したシステムで連携しない"],
+    answer: 1,
+    explanation: "Cloud Management Platform（CMP）はクラウドリソース（VM、ストレージ等）のプロビジョニングとライフサイクル管理を担います。ServiceNow Discoveryはそれらのクラウドリソースを自動検出してCMDBに記録・管理します。両者は補完関係にあります。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Serverの「IP Service」の役割はどれですか？",
+    options: ["MID ServerにIPアドレスを割り当てる設定","MID ServerがターゲットデバイスのTCP/UDPポートスキャンを実行するためのサービス","MID Server間の通信を暗号化するサービス","ServiceNowインスタンスへのHTTPS接続を管理するサービス"],
+    answer: 1,
+    explanation: "IP Service（旧称：Port Scanner Service）は、MID ServerがDiscoveryのScanningフェーズでターゲットのIPアドレス範囲にTCP/UDPポートスキャンを実行するためのコンポーネントです。応答したデバイスをClassificationフェーズに渡します。"
+  },
+  {
+    category: "Credentials",
+    text: "「Credential-less Discovery」とはどのような機能ですか？",
+    options: ["認証不要でWindowsサーバーを発見する機能","SNMPとICMPのみを使用してデバイスの基本情報を取得する軽量Discovery","クラウドAPIを使用してVMインスタンスを発見する機能","ACC（Agent Client Collector）を使用した認証不要Discovery"],
+    answer: 1,
+    explanation: "Credential-less Discoveryは、認証情報なしでICMP（ping）やSNMP（コミュニティ文字列なしの基本情報）を使用してデバイスの存在と基本的なネットワーク情報を取得します。詳細情報収集には認証情報が必要ですが、ネットワーク全体の把握に役立ちます。"
+  },
+  {
+    category: "Discovery",
+    text: "ServiceNowの「ITOM Premium」に含まれる機能として正しい組み合わせはどれですか？",
+    options: ["Discovery + Event Management + Service Mapping + AIOps（Health Log Analytics）","Discovery + ITSM + HR Service Delivery","Service Mapping + GRC + SecOps","Event Management + ITAM + CMDB"],
+    answer: 0,
+    explanation: "ITOM Premiumには、Discovery（CI発見）、Event Management（イベント管理）、Service Mapping（サービスマッピング）、Health Log Analytics（HLA/AIOps）が含まれます。これらを組み合わせてITオペレーションの完全な可視化と自動化を実現します。"
+  },
+  // ========== 追加20問 (81〜100) ==========
+  {
+    category: "Discovery",
+    text: "ServiceNow DiscoveryでIPv6アドレスをスキャン対象に含めるために必要な設定はどれですか？",
+    options: ["Discovery Scheduleの「IP Ranges」フィールドにIPv6 CIDRを入力する","MID ServerのJVMオプションに-Djava.net.preferIPv6Addresses=trueを追加する","SNMPクレデンシャルをIPv6モードで別途作成する","IPv6スキャンはServiceNowでは未対応であるため設定不要"],
+    answer: 0,
+    explanation: "ServiceNow DiscoveryはIPv6をサポートしており、Discovery ScheduleのIP RangesフィールドにはIPv6のCIDR表記（例: 2001:db8::/32）を入力できます。MID ServerがIPv6通信可能なネットワーク上に配置されていることも前提条件です。"
+  },
+  {
+    category: "Discovery",
+    text: "ServiceNow DiscoveryでOracle Databaseを発見するために必要な設定として正しいものはどれですか？",
+    options: ["OracleクライアントをMID Serverにインストールし、TNSNAMESを設定する","DatabaseクレデンシャルにOracle用のJDBC URLとユーザー名・パスワードを設定する","SNMPトラップをOracleサーバーから受信できるよう設定する","Oracle Enterprise Managerとの連携プラグインをインストールする"],
+    answer: 1,
+    explanation: "DiscoveryでOracleなどのRDBMSを発見するには、Discovery Credentialsに「JDBC」タイプを選択し、接続URL・ユーザー名・パスワードを設定します。MID ServerがJDBC経由でDBに接続しスキーマ情報等を収集します。OracleクライアントのインストールはJDBCドライバーで代替されます。"
+  },
+  {
+    category: "Discovery",
+    text: "SAM（Software Asset Management）とDiscoveryを連携させる主な目的はどれですか？",
+    options: ["CMDBに登録されたCIのライセンス使用状況を自動的に把握し、ライセンスコンプライアンスを管理する","ソフトウェアのソースコードをServiceNowリポジトリに同期する","アプリケーションのパッチ適用をDiscoveryトリガーで自動実行する","SAMのライセンスデータをMID Server上に保存してオフライン参照できるようにする"],
+    answer: 0,
+    explanation: "DiscoveryはサーバーやPCにインストールされたソフトウェアの情報をCMDBに登録します。SAMはそのデータを基にライセンスの利用数・保有数を突き合わせてコンプライアンス状態（過不足）を可視化します。両機能の連携でIT資産管理の精度が向上します。"
+  },
+  {
+    category: "MID Server",
+    text: "企業のフォワードプロキシ経由でMID ServerをServiceNowインスタンスに接続させる場合、設定すべき箇所はどれですか？",
+    options: ["ServiceNow管理コンソールの「MID Server Properties」でプロキシIPを設定する","MID Serverのconfig.xmlにmid.proxy.host / mid.proxy.port等のプロパティを追記する","MID Serverが稼働するOSのシステム環境変数HTTPS_PROXYにプロキシURLを設定する","Discoveryスケジュールの「Advanced」タブでプロキシサーバーを指定する"],
+    answer: 1,
+    explanation: "MID ServerをプロキシサーバーS経由でSnowインスタンスに接続するには、config.xmlにmid.proxy.host・mid.proxy.port（必要に応じてmid.proxy.username・mid.proxy.password）を設定します。この設定によりMID ServerのHTTPS通信がプロキシを経由するようになります。"
+  },
+  {
+    category: "Patterns",
+    text: "Pattern DesignerのVariable Stepの主な役割はどれですか？",
+    options: ["前のステップで取得した値を変数に格納し、後続のステップで再利用できるようにする","外部REST APIを呼び出してJSONレスポンスをパースする","CI同士のリレーションシップを動的に生成する","デバイスのOSバージョンに応じてパターン分岐を制御する"],
+    answer: 0,
+    explanation: "Variable Stepは、先行ステップ（Parse Step等）の出力値を名前付き変数として保存するためのステップです。保存した変数は${variableName}の形式で後続のIdentify Step・Parse Step・Relationship Stepなどから参照でき、パターン内でのデータの受け渡しに使用します。"
+  },
+  {
+    category: "Patterns",
+    text: "Pattern Designerでパターンの動作をデバッグする際に使用する機能はどれですか？",
+    options: ["Pattern Designer画面の「Test」ボタンで特定のIPを指定してパターンをシミュレーション実行する","MID ServerのECC Queueを手動ポーリングしてステップ結果を確認する","Discoveryスケジュールを「Debug」モードで手動起動してCMDBへの書き込みを抑止する","ServiceNow Studio内のデバッガーにパターンをアタッチしてブレークポイントを設定する"],
+    answer: 0,
+    explanation: "Pattern Designerには「Test」機能があり、対象デバイスのIPアドレスやホスト名を指定して、パターンをリアルタイムで試験実行できます。各ステップの入出力値・エラーが画面上に表示されるため、問題のステップを特定しやすくなっています。"
+  },
+  {
+    category: "CMDB",
+    text: "CMDB上でCI間に依存関係（Relationship）が定義されている場合、変更管理（Change Management）にどのような影響がありますか？",
+    options: ["依存するCIが変更対象として自動的にChange Requestに追加される","関連CIへの影響範囲を可視化でき、変更による影響分析（Impact Analysis）に活用できる","依存CIが存在するとChange Requestの承認ワークフローがスキップされる","変更管理はCMDB上のRelationshipデータを参照しないため影響はない"],
+    answer: 1,
+    explanation: "CMDBに正確なCI依存関係が登録されていると、Change Requestの作成時にImpact Analysis機能を使って変更対象CIに依存するサービスや関連CIへの影響範囲を可視化できます。これにより変更リスクの評価精度が向上し、不用意なサービス断を防止できます。"
+  },
+  {
+    category: "CMDB",
+    text: "CSDM（Common Service Data Model）のレイヤー構成において「Technical Service」が表すものはどれですか？",
+    options: ["顧客向けに提供するビジネスサービスの単位","ミドルウェアやデータベースなどインフラ技術コンポーネントが提供する機能単位","アプリケーション開発チームが管理するマイクロサービスの単位","ERPやCRMなどの業務アプリケーションが提供するサービスの単位"],
+    answer: 1,
+    explanation: "CSDMのTechnical Service（技術サービス）は、インフラ・プラットフォームレイヤーに位置し、WebサーバーやDBMSなどの技術コンポーネントが提供する機能を表します。Business Serviceが業務視点、Application Serviceがアプリ視点であるのに対し、Technical Serviceは技術インフラの視点で定義されます。"
+  },
+  {
+    category: "CMDB",
+    text: "CSDMにおいて「Business Application」と「Application Service」の関係として正しいものはどれですか？",
+    options: ["Business ApplicationはApplication Serviceの上位概念で、1つのBusiness Applicationが複数のApplication Serviceを持つことができる","Application ServiceはBusiness Applicationの別名であり、同じテーブルに格納される","Business Applicationは廃止されたCSDM v1の概念であり、v4以降は使用しない","Application Serviceは必ずBusiness Applicationとは独立して定義される"],
+    answer: 0,
+    explanation: "CSDMでは、Business Application（ビジネスアプリケーション）が論理的なアプリの全体を表す上位概念で、その下にApplication Service（アプリケーションサービス）が紐づきます。例えば「人事システム」がBusiness Applicationで、「給与計算サービス」「勤怠管理サービス」がApplication Serviceとして定義されます。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "ServiceNowでKubernetesクラスター上のリソース（Pod・Deployment・Serviceなど）を発見するために使用する機能はどれですか？",
+    options: ["標準のIPベースDiscoveryスケジュールにKubernetesクラスターのIPを追加する","Cloud Discoveryの「Kubernetes」タグを持つDiscovery Credentialを設定し、Kubernetes APIサーバーにMID Serverから接続する","ACC（Agent Client Collector）をPodにサイドカーとして挿入してデータを収集する","SNMPを使用してKubernetes Nodeを発見し、自動的にPod情報を取得する"],
+    answer: 1,
+    explanation: "ServiceNowのCloud Discovery（またはContainer Discovery）では、Kubernetes APIサーバーへの接続クレデンシャル（Bearer TokenやKubeconfig）を設定したDiscovery Credentialを作成し、MID Server経由でKubernetes APIを呼び出すことで、Node・Pod・Deployment・Serviceなどのリソース情報をCMDBに取り込みます。"
+  },
+  {
+    category: "Cloud Discovery",
+    text: "TerraformでプロビジョニングされたクラウドリソースをServiceNow CMDBに取り込む方法として最も適切なものはどれですか？",
+    options: ["Terraform CLIのプラグインとしてServiceNow Providerをインストールし、リソース作成時に自動でCMDBへ書き込む","ServiceNowのCloud Discovery機能でTerraform State Fileを直接取り込む","Terraformの実行後にREST APIを使用してServiceNowのImport Setを通じてCMDBを更新するスクリプトを実行する","TerraformはServiceNowと直接連携できないため、手動でCMDBを更新する"],
+    answer: 2,
+    explanation: "TerraformリソースをCMDBに取り込む一般的な方法は、Terraform実行パイプライン（CI/CD）内のPost-stepでServiceNow REST API（Table APIやImport Set API）を呼び出してCMDBを更新することです。ServiceNow Terraform Providerを使用する方法もありますが、公式にはImport Set経由のETLアプローチが推奨されます。"
+  },
+  {
+    category: "Service Mapping",
+    text: "Service MappingのNear Real-time（NRT）マッピング機能の説明として正しいものはどれですか？",
+    options: ["DiscoveryのスケジュールをリアルタイムトリガーにしてCIが検出されるたびにサービスマップを即時更新する","ACC（Agent Client Collector）やEvent Managementのアラートをトリガーとして、CI変更を検知した際に自動でサービスマップを再計算する","5分間隔のポーリングによりCMDBの変更をサービスマップに反映する定期的な同期機能","Service MappingのGUI上でマップを手動リフレッシュする機能"],
+    answer: 1,
+    explanation: "Near Real-time（NRT）マッピングは、ACC（Agent Client Collector）が検知したCIの変更やEvent Managementからのシグナルをトリガーとして、サービスマップを自動的に再計算・更新する機能です。従来の定期スキャン方式と比べ、変更検出から反映までのラグが大幅に短縮されます。"
+  },
+  {
+    category: "Event Management",
+    text: "Event ManagementのAlert Correlation Rulesを設定する際、「Binding」フィールドの役割はどれですか？",
+    options: ["どのMID Serverがイベントを収集するかを指定する","複数のアラートをグループ化するための共通キー（例: CI名やサービス名）を定義する","アラートの優先度をITIL標準に変換するマッピングを設定する","相関ルールを適用するイベントソース（コネクター）を限定する"],
+    answer: 1,
+    explanation: "Alert Correlation RulesのBindingフィールドは、複数のアラートをひとつのグループ（Alert Group）として束ねるための共通属性キーを定義します。例えばci_identifierやsource_ci_nameをBindingに指定すると、同一CIに関連する複数アラートが自動グルーピングされ、根本原因分析が容易になります。"
+  },
+  {
+    category: "Troubleshooting",
+    text: "Discoveryの詳細デバッグログを有効化するために設定する箇所はどれですか？",
+    options: ["MID Serverのconfig.xmlにloglevel=debugを設定する","ServiceNowの「Discovery Properties」でlog.level.discoveryをdebugに変更する","Discovery ScheduleレコードのLog Levelフィールドを「Debug」に変更する","MID Serverの管理コンソール（Status URL）でデバッグモードをONにする"],
+    answer: 2,
+    explanation: "Discoveryのログレベルは、Discovery Scheduleレコードの「Log Level」フィールドで制御します。「Debug」に設定するとプローブの送受信内容や各フェーズの詳細な処理ログがDiscovery Logテーブルに記録され、問題の特定に役立ちます。通常運用では「Info」を推奨します。"
+  },
+  {
+    category: "Troubleshooting",
+    text: "CMDB上の「Orphan CI」（孤立CI）の定義と推奨される対処法として正しいものはどれですか？",
+    options: ["Orphan CIとはステータスが「Retired」のCIで、CMDBクリーナーで自動削除する","Orphan CIとは一定期間Discoveryで再発見されなかったCIで、調査の上でRetired化または削除を検討する","Orphan CIとはRelationshipが未登録のCIで、Service Mappingで自動的にリレーション付与する","Orphan CIとはCreated Byが不明のCIで、監査ログを参照して作成者を特定する"],
+    answer: 1,
+    explanation: "Orphan CIは、過去にDiscoveryで登録されたが、直近のDiscoveryスキャンで一定期間再検出されていないCIを指します。対処法としては、デバイスが廃止されたかスキャン対象外になっていないかを調査し、不要であればステータスをRetiredに変更するかCMDBから削除します。CMDB Health機能でOrphanを定期レポートできます。"
+  },
+  {
+    category: "Integration",
+    text: "ServiceNow Table APIを使って外部システムからCMDB上の特定CI（例: Linuxサーバーの一覧）を取得する際の正しいエンドポイントはどれですか？",
+    options: ["/api/now/cmdb/instance/{className}","GET /api/now/table/cmdb_ci_linux_server?sysparm_fields=name,ip_address,os_version","POST /api/now/import/{tableName}でImport SetにCMDBデータを書き込む","GET /api/now/discovery/ci_list?class=linux_server"],
+    answer: 1,
+    explanation: "Table APIのGETメソッドでは/api/now/table/{table_name}のエンドポイントを使用します。LinuxサーバーCIはcmdb_ci_linux_serverテーブルに格納されており、sysparm_fieldsで取得フィールドを絞り込み、sysparm_queryで検索条件を指定してフィルタリングできます。認証にはBasic認証またはOAuthトークンを使用します。"
+  },
+  {
+    category: "Discovery",
+    text: "VMware vCenter/ESXiをServiceNow Discoveryで発見する際に必要な設定として正しいものはどれですか？",
+    options: ["vCenter用のSNMPクレデンシャルを作成し、UDP 161ポートをMID Serverから開放する","VMware専用のクレデンシャルタイプ「VMware」を作成し、vCenter APIにアクセス可能なアカウント情報を設定する","ESXiホストにAgent Client Collector（ACC）をデプロイして情報収集する","vCenterのREST APIではなく、PowerCLIスクリプトをMID Server上で実行して情報収集する"],
+    answer: 1,
+    explanation: "VMware vCenter/ESXiの発見には、Discovery Credentialsで「VMware」タイプのクレデンシャルを作成し、vCenter Server APIへの接続に使用するユーザー名とパスワードを設定します。MID ServerはvSphere APIを通じてvCenter・ESXiホスト・仮想マシンの情報を収集してCMDBに登録します。"
+  },
+  {
+    category: "MID Server",
+    text: "MID Server Extensionsの主な役割はどれですか？",
+    options: ["MID Serverの処理能力を拡張するための追加ハードウェアモジュール","標準では含まれていないJARファイルやライブラリをMID Serverに追加して機能を拡張する仕組み","MID Serverのネットワークインターフェースを仮想的に追加する機能","複数のMID Serverをクラスタリングして負荷分散を実現する機能"],
+    answer: 1,
+    explanation: "MID Server Extensionsは、MID Serverに独自のJARファイル（ライブラリ）や設定ファイルを追加して機能を拡張する仕組みです。例えば特定のJDBCドライバーや独自プロトコル対応ライブラリを追加することで、標準Discoveryでカバーされない製品・プロトコルの対応が可能になります。"
+  },
+  {
+    category: "Patterns",
+    text: "Pattern Designerの「HTTP Step」を使用して外部REST APIを呼び出す際の説明として正しいものはどれですか？",
+    options: ["HTTP StepはServiceNow内部のREST APIのみ呼び出し可能で、外部URLは指定できない","HTTP Stepでメソッド（GET/POST等）・URL・ヘッダー・ボディを設定し、MID Server経由で外部REST APIを呼び出してレスポンスをパースできる","HTTP Stepの呼び出しはServiceNowインスタンスから直接行われ、MID Serverは経由しない","HTTP StepはHTTPS（SSL）通信に対応していないため、HTTPエンドポイントのみ利用できる"],
+    answer: 1,
+    explanation: "Pattern DesignerのHTTP Stepを使用すると、HTTPメソッド・URL・認証ヘッダー・リクエストボディを設定してMID Server経由で外部REST APIを呼び出せます。レスポンスボディ（JSON/XML等）はParse Stepと組み合わせて値を抽出し、CIの属性として登録することが可能です。"
+  },
+  {
+    category: "CMDB",
+    text: "CMDB Configuration Baseline（設定ベースライン）の主な目的はどれですか？",
+    options: ["CMDBの全CIを定期的にバックアップして障害時に復元する","特定時点のCI属性値をベースラインとして記録し、その後の変更（ドリフト）を検出・レポートする","CMDBのデータ品質スコアを自動計算してダッシュボードに表示する","全CIに対してDiscoveryを強制実行して属性値を最新の状態に上書きする"],
+    answer: 1,
+    explanation: "CMDB Configuration Baselineは、特定日時におけるCIの属性値（IPアドレス・OSバージョン・設定値等）をスナップショットとして記録する機能です。その後のDiscoveryで取得した現在値とベースラインを比較することで、意図しない設定変更（コンフィギュレーションドリフト）を検出し、コンプライアンス管理に活用できます。"
+  }
+];
+
+// ============================================================
+//  アプリ状態
+// ============================================================
+const QUIZ_SIZE = 40;
+const PASS_RATE = 65;
+const letters = ['A', 'B', 'C', 'D'];
+
+let shuffledQuestions = [];
+let currentIndex = 0;
+// userAnswers: { [questionIndex]: { selected, correct, isCorrect } }
+let userAnswers = {};
+
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  ['start-screen', 'quiz-screen', 'result-screen'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+}
+
+function showStart() { showScreen('start-screen'); }
+
+// ============================================================
+//  クイズ開始
+// ============================================================
+function startQuiz() {
+  shuffledQuestions = shuffle(questions).slice(0, QUIZ_SIZE);
+  currentIndex = 0;
+  userAnswers = {};
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+// ============================================================
+//  問題描画
+// ============================================================
+function renderQuestion() {
+  const q = shuffledQuestions[currentIndex];
+  const saved = userAnswers[currentIndex];
+
+  // 進捗
+  document.getElementById('progress-fill').style.width =
+    ((currentIndex / shuffledQuestions.length) * 100) + '%';
+  document.getElementById('q-counter').textContent =
+    `問題 ${currentIndex + 1} / ${shuffledQuestions.length}`;
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  // 選択肢
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<span class="opt-letter">${letters[i]}</span><span>${opt}</span>`;
+
+    if (saved) {
+      // 回答済み：色を復元
+      div.classList.add('disabled');
+      if (i === saved.selected && saved.isCorrect) div.classList.add('correct');
+      if (i === saved.selected && !saved.isCorrect) div.classList.add('wrong');
+      if (!saved.isCorrect && i === saved.correct) div.classList.add('show-correct');
+    } else {
+      div.onclick = () => selectOption(i);
+    }
+    container.appendChild(div);
+  });
+
+  // 解説
+  const expBox = document.getElementById('explanation-box');
+  if (saved) {
+    document.getElementById('explanation-text').textContent = q.explanation;
+    expBox.style.display = 'block';
+  } else {
+    expBox.style.display = 'none';
+    document.getElementById('explanation-text').textContent = '';
+  }
+
+  // ボタン制御
+  const isLast = currentIndex === shuffledQuestions.length - 1;
+  document.getElementById('next-btn').disabled = !saved;
+  document.getElementById('next-btn').textContent = isLast ? '結果を見る' : '次の問題 →';
+  document.getElementById('prev-btn').disabled = currentIndex === 0;
+}
+
+// ============================================================
+//  選択肢クリック
+// ============================================================
+function selectOption(idx) {
+  if (userAnswers[currentIndex]) return; // 回答済み
+
+  const q = shuffledQuestions[currentIndex];
+  const isCorrect = idx === q.answer;
+  userAnswers[currentIndex] = { selected: idx, correct: q.answer, isCorrect };
+
+  // 色付け
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => {
+    o.classList.add('disabled');
+    o.onclick = null;
+  });
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) opts[q.answer].classList.add('show-correct');
+
+  // 解説
+  document.getElementById('explanation-text').textContent = q.explanation;
+  document.getElementById('explanation-box').style.display = 'block';
+
+  // ボタン有効化
+  document.getElementById('next-btn').disabled = false;
+}
+
+// ============================================================
+//  ナビゲーション
+// ============================================================
+function nextQuestion() {
+  if (!userAnswers[currentIndex]) return;
+  currentIndex++;
+  if (currentIndex >= shuffledQuestions.length) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function prevQuestion() {
+  if (currentIndex <= 0) return;
+  currentIndex--;
+  renderQuestion();
+}
+
+function confirmAbort() {
+  if (confirm('試験を中断してトップに戻りますか？')) showStart();
+}
+
+// ============================================================
+//  結果
+// ============================================================
+function showResult() {
+  const total = shuffledQuestions.length;
+  const score = Object.values(userAnswers).filter(a => a.isCorrect).length;
+  const pct = Math.round((score / total) * 100);
+  const pass = pct >= PASS_RATE;
+
+  document.getElementById('score-pct').textContent = pct + '%';
+  document.getElementById('result-title').textContent = pass ? '合格ライン達成！' : 'もう少し頑張りましょう';
+  const badge = document.getElementById('pass-badge');
+  badge.textContent = pass ? `✓ PASS（${PASS_RATE}%以上）` : `✗ FAIL（${PASS_RATE}%未満）`;
+  badge.className = 'pass-badge ' + (pass ? 'pass' : 'fail');
+
+  document.getElementById('stat-correct').textContent = score;
+  document.getElementById('stat-wrong').textContent = total - score;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('review-section').style.display = 'none';
+
+  showScreen('result-screen');
+}
+
+function restartQuiz() { startQuiz(); }
+
+// ============================================================
+//  間違えた問題の復習
+// ============================================================
+function reviewWrong() {
+  const wrongList = Object.entries(userAnswers)
+    .filter(([, a]) => !a.isCorrect)
+    .map(([idx, a]) => ({ idx: Number(idx), ...a }));
+
+  const section = document.getElementById('review-section');
+  document.getElementById('wrong-count').textContent = wrongList.length;
+
+  if (wrongList.length === 0) {
+    section.innerHTML = '<h3 style="color:var(--sn-green);border-bottom:2px solid var(--sn-green);padding-bottom:8px;">全問正解！お見事です！🎉</h3>';
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  const items = document.getElementById('review-items');
+  items.innerHTML = '';
+  wrongList.forEach(ans => {
+    const q = shuffledQuestions[ans.idx];
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    div.innerHTML = `
+      <div class="review-q-num">問題 ${ans.idx + 1} | ${q.category}</div>
+      <div class="review-q-text">${q.text}</div>
+      <div class="review-answer your"><strong>あなたの回答：</strong> ${letters[ans.selected]}. ${q.options[ans.selected]}</div>
+      <div class="review-answer correct"><strong>正解：</strong> ${letters[ans.correct]}. ${q.options[ans.correct]}</div>
+      <div class="review-exp">${q.explanation}</div>
+    `;
+    items.appendChild(div);
+  });
+
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

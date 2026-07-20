@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIS-DF フラッシュカード | ServiceNow</title>
+  <style>
+    :root {
+      --sn-purple:       #6B2D8B;
+      --sn-purple-light: #8B3FB5;
+      --sn-purple-dark:  #4A1F61;
+      --sn-purple-pale:  #f5eeff;
+      --sn-gray-bg:      #f0f0f0;
+      --sn-gray-card:    #ffffff;
+      --sn-gray-border:  #d0d0d7;
+      --sn-gray-text:    #293949;
+      --sn-gray-muted:   #606060;
+      --sn-green:        #0a8f4d;
+      --sn-green-pale:   #edfff5;
+      --sn-red:          #c4001d;
+      --sn-red-pale:     #fff0f2;
+      --sn-blue:         #0054a6;
+      --sn-yellow:       #e69900;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background: var(--sn-gray-bg);
+      color: var(--sn-gray-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--sn-purple-dark);
+      color: #fff;
+      height: 56px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+      position: sticky; top: 0; z-index: 100;
+      flex-shrink: 0;
+    }
+    .logo { font-size: 19px; font-weight: 700; letter-spacing: 1px; }
+    .hdr-badge {
+      background: var(--sn-purple-light);
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .hdr-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .hdr-shortcut {
+      background: rgba(255,255,255,.15);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+      gap: 20px;
+    }
+
+    /* ── STAT BAR ── */
+    .stat-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--sn-gray-muted);
+    }
+    .stat-item strong { color: var(--sn-gray-text); font-size: 15px; }
+    .stat-sep { color: var(--sn-gray-border); }
+    .progress-wrap {
+      flex: 1;
+      min-width: 140px;
+      background: #d8d8e0;
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: var(--sn-purple);
+      height: 100%;
+      border-radius: 99px;
+      transition: width .35s ease;
+    }
+    .learned-badge {
+      background: var(--sn-green-pale);
+      color: var(--sn-green);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* ── CATEGORY FILTER ── */
+    .cat-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+    .cat-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 2px solid var(--sn-gray-border);
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sn-gray-muted);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .cat-btn:hover { border-color: var(--sn-purple-light); color: var(--sn-purple); }
+    .cat-btn.active {
+      background: var(--sn-purple);
+      border-color: var(--sn-purple);
+      color: #fff;
+    }
+
+    /* ── CARD AREA ── */
+    .card-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* 3-D flip container */
+    .flip-wrap {
+      width: 100%;
+      max-width: 700px;
+      height: 340px;
+      perspective: 1200px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .flip-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .flip-inner.flipped { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.1);
+    }
+
+    /* FRONT */
+    .card-front {
+      background: var(--sn-gray-card);
+      border: 2px solid var(--sn-gray-border);
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .card-front .face-hint {
+      position: absolute;
+      top: 14px; left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--sn-gray-muted);
+      font-weight: 600;
+    }
+    .card-front .cat-tag {
+      position: absolute;
+      top: 12px; left: 16px;
+      background: var(--sn-purple-dark);
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .card-front .term-en {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--sn-purple-dark);
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .card-front .term-ja {
+      font-size: 15px;
+      color: var(--sn-gray-muted);
+      font-weight: 500;
+    }
+    .card-front .flip-icon {
+      position: absolute;
+      bottom: 14px; right: 18px;
+      font-size: 20px;
+      color: var(--sn-gray-border);
+    }
+
+    /* BACK */
+    .card-back {
+      background: var(--sn-purple-dark);
+      color: #fff;
+      transform: rotateY(180deg);
+      justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .card-back .face-hint {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,.5);
+      font-weight: 600;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+    .card-back .def-text {
+      font-size: 16px;
+      line-height: 1.75;
+      color: #fff;
+      flex: 1;
+    }
+    .card-back .keyword-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 16px;
+      flex-shrink: 0;
+    }
+    .keyword-chip {
+      background: rgba(255,255,255,.18);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* ── NAV CONTROLS ── */
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background .15s, opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .35; cursor: default; transform: none; }
+    .btn-primary { background: var(--sn-purple); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--sn-purple-light); }
+    .btn-secondary { background: #fff; color: var(--sn-purple); border: 2px solid var(--sn-purple); }
+    .btn-secondary:hover:not(:disabled) { background: var(--sn-purple-pale); }
+    .btn-green { background: var(--sn-green); color: #fff; }
+    .btn-green:hover:not(:disabled) { opacity: .88; }
+    .btn-ghost { background: #fff; color: var(--sn-gray-muted); border: 2px solid var(--sn-gray-border); }
+    .btn-ghost:hover { background: #f5f5f5; }
+    .btn-danger { background: var(--sn-red-pale); color: var(--sn-red); border: 2px solid var(--sn-red); }
+    .btn-danger:hover { background: #ffd9de; }
+
+    /* ── KEYBOARD HINT ── */
+    .kbd-hint {
+      font-size: 12px;
+      color: var(--sn-gray-muted);
+      text-align: center;
+    }
+    kbd {
+      display: inline-block;
+      background: #e8e8ee;
+      border: 1px solid #bbb;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--sn-gray-muted);
+    }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 20px; color: var(--sn-gray-text); margin-bottom: 8px; }
+
+    /* ── COMPLETED STATE ── */
+    .completed-state {
+      display: none;
+      text-align: center;
+      padding: 40px 24px;
+    }
+    .completed-state .big-emoji { font-size: 56px; margin-bottom: 16px; }
+    .completed-state h2 { font-size: 24px; font-weight: 800; color: var(--sn-purple-dark); margin-bottom: 8px; }
+    .completed-state p { color: var(--sn-gray-muted); font-size: 15px; margin-bottom: 24px; }
+    .completed-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      .flip-wrap { height: 280px; }
+      .card-face { padding: 20px; }
+      .card-front .term-en { font-size: 22px; }
+      .card-back .def-text { font-size: 14px; }
+      .btn { padding: 9px 14px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">ServiceNow</span>
+  <span class="hdr-badge">CIS-DF フラッシュカード</span>
+  <div class="hdr-right">
+    <span class="hdr-shortcut">←→ 移動</span>
+    <span class="hdr-shortcut">Space 裏返す</span>
+    <span class="hdr-shortcut">Enter 覚えた</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- STAT BAR -->
+  <div class="stat-bar">
+    <div class="stat-item">カード <strong id="pos-cur">1</strong> / <strong id="pos-tot">0</strong></div>
+    <span class="stat-sep">|</span>
+    <div class="stat-item">残り <strong id="pos-rem">0</strong> 枚</div>
+    <div class="progress-wrap"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="learned-badge" id="learned-badge">覚えた 0枚</span>
+  </div>
+
+  <!-- CATEGORY FILTER -->
+  <div class="cat-scroll" id="cat-scroll"></div>
+
+  <!-- CARD AREA -->
+  <div class="card-area" id="card-area">
+
+    <div class="flip-wrap" id="flip-wrap" onclick="flipCard()">
+      <div class="flip-inner" id="flip-inner">
+
+        <div class="card-face card-front">
+          <span class="face-hint">クリックまたはスペースキーで裏返す</span>
+          <span class="cat-tag" id="front-cat"></span>
+          <div class="term-en" id="front-term-en"></div>
+          <div class="term-ja" id="front-term-ja"></div>
+          <span class="flip-icon">↩</span>
+        </div>
+
+        <div class="card-face card-back">
+          <div class="face-hint">定義・解説</div>
+          <div class="def-text" id="back-def"></div>
+          <div class="keyword-chips" id="back-chips"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NAV CONTROLS -->
+    <div class="nav-controls">
+      <button class="btn btn-ghost" id="btn-prev" onclick="navigate(-1)">← 前へ</button>
+      <button class="btn btn-ghost" onclick="shuffleDeck()">🔀 シャッフル</button>
+      <button class="btn btn-secondary" onclick="flipCard()">↩ 裏返す</button>
+      <button class="btn btn-green" id="btn-learned" onclick="markLearned()">✓ 覚えた！</button>
+      <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">次へ →</button>
+    </div>
+
+    <div class="kbd-hint">
+      <kbd>←</kbd><kbd>→</kbd> ナビゲーション &nbsp;
+      <kbd>Space</kbd> 裏返す &nbsp;
+      <kbd>Enter</kbd> 覚えた &nbsp;
+      <kbd>R</kbd> リセット
+    </div>
+
+  </div>
+
+  <!-- COMPLETED STATE -->
+  <div class="completed-state" id="completed-state">
+    <div class="big-emoji">🎉</div>
+    <h2>全カード完了！</h2>
+    <p id="completed-msg"></p>
+    <div class="completed-actions">
+      <button class="btn btn-primary" onclick="resetAll()">最初からやり直す</button>
+      <button class="btn btn-secondary" onclick="resetLearned()">覚えたカードも含めてリセット</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ============================================================
+// カードデータ（114枚）
+// ============================================================
+const ALL_CARDS = [
+
+  // ===== MID Server (14枚) =====
+  { cat:"MID Server", en:"MID Server", ja:"MIDサーバー",
+    def:"Management, Instrumentation, and Discovery Serverの略。ServiceNowインスタンスとネットワーク上のデバイス間の通信を仲介するJavaアプリケーション。ファイアウォールの内側にあるリソースへのアクセスを可能にする。",
+    chips:["Java","ファイアウォール","仲介"] },
+
+  { cat:"MID Server", en:"ECC Queue", ja:"ECCキュー（外部通信チャネルキュー）",
+    def:"External Communication Channel Queueの略。ServiceNowインスタンスとMID Server間の非同期通信を管理するキュー。OutputレコードはSN→MIDへの指示、InputレコードはMID→SNへの応答を格納する。",
+    chips:["Output","Input","非同期通信"] },
+
+  { cat:"MID Server", en:"Validated (MID Server)", ja:"検証済みステータス",
+    def:"管理者がMID Serverを正式に承認した状態。新しいMID Serverは自動的にValidatedにならず、ServiceNow管理画面から手動で検証・承認する必要がある。検証前はDiscoveryに使用できない。",
+    chips:["承認","セキュリティ","管理者"] },
+
+  { cat:"MID Server", en:"MID Server Cluster", ja:"MIDサーバークラスター",
+    def:"同一ネットワークセグメント内の複数MID Serverをグループ化する機能。Discoveryの負荷を複数MID Serverに分散し、1台が停止しても他のMID Serverが処理を継続できる高可用性を実現する。",
+    chips:["負荷分散","高可用性","フェイルオーバー"] },
+
+  { cat:"MID Server", en:"Auto-upgrade", ja:"自動アップグレード",
+    def:"ServiceNowインスタンスのバージョンアップ（例：Washington→Xanadu）に合わせて、接続されているMID Serverのソフトウェアを自動的に更新する機能。手動でのアップグレード作業が不要になる。",
+    chips:["バージョン管理","自動化","保守"] },
+
+  { cat:"MID Server", en:"IP Service", ja:"IPサービス（ポートスキャンサービス）",
+    def:"MID ServerがDiscoveryのScanningフェーズでターゲットのIPアドレス範囲にTCP/UDPポートスキャンを実行するためのコンポーネント。スキャン結果をClassificationフェーズに渡す。",
+    chips:["TCPスキャン","Scanning","ポート"] },
+
+  { cat:"MID Server", en:"MID Server Extensions", ja:"MIDサーバー拡張機能",
+    def:"MID Serverに追加のJARファイルや設定ファイルを配置して機能を拡張する仕組み。JDBCドライバの追加や独自プロトコルの対応など、標準では対応していない機能を追加できる。",
+    chips:["JAR","JDBC","カスタム拡張"] },
+
+  { cat:"MID Server", en:"config.xml", ja:"MIDサーバー設定ファイル",
+    def:"MID Serverの動作を制御するXML設定ファイル。接続先ServiceNowインスタンスのURL、MID Serverユーザーの認証情報、プロキシ設定、JVMパラメータなどを定義する。",
+    chips:["接続設定","認証情報","プロキシ"] },
+
+  { cat:"MID Server", en:"agent.log", ja:"エージェントログファイル",
+    def:"MID Serverの実行ログが記録されるファイル。起動エラー、通信エラー、Probe実行の詳細など、トラブルシューティング時に最初に確認するログファイル。デバッグレベルも設定可能。",
+    chips:["ログ","トラブルシューティング","デバッグ"] },
+
+  { cat:"MID Server", en:"MID Server Proxy Settings", ja:"プロキシ設定",
+    def:"MID Serverが企業内プロキシサーバーを経由してServiceNowインスタンスに接続するための設定。config.xmlにプロキシホスト名、ポート、認証情報を記述して設定する。",
+    chips:["プロキシ","config.xml","ネットワーク"] },
+
+  { cat:"MID Server", en:"MID Server User", ja:"MIDサーバーユーザー",
+    def:"ServiceNowインスタンス上でMID Serverが認証に使用する専用サービスアカウント。「mid_server」ロールが付与され、ECCキューの読み書きや各種APIへのアクセス権限を持つ。",
+    chips:["サービスアカウント","mid_serverロール","認証"] },
+
+  { cat:"MID Server", en:"MID Server Heartbeat", ja:"ハートビート",
+    def:"MID ServerがServiceNowインスタンスに定期的に送信する生存確認メッセージ。デフォルトで約30秒ごとに送信され、一定時間ハートビートが途絶えるとMID ServerのステータスがDownになる。",
+    chips:["死活監視","ステータス","定期通信"] },
+
+  { cat:"MID Server", en:"MID Server Selection", ja:"MIDサーバー選択ルール",
+    def:"Discovery Scheduleに複数のMID Serverが利用可能な場合に、どのMID Serverを使用するかを決定するルール。IPアドレス範囲、MID Server名、Clusterなどで選択条件を指定できる。",
+    chips:["Discovery Schedule","ルール","割り当て"] },
+
+  { cat:"MID Server", en:"ACC (Agent Client Collector)", ja:"エージェントクライアントコレクター",
+    def:"MID Serverが直接到達できない環境（DMZ、リモートサイト、クラウド）にインストールするエージェント型のデータ収集コンポーネント。収集データをMID Server経由でServiceNowに送信する。",
+    chips:["エージェント型","DMZ","クラウド"] },
+
+  // ===== Discovery - Core (15枚) =====
+  { cat:"Discovery", en:"Discovery", ja:"ディスカバリー",
+    def:"ServiceNow ITOMの機能の一つ。ネットワーク上のデバイスやアプリケーションを自動的に検出し、その情報をCMDBのCIとして記録するプロセス。MID Serverを介して実行される。",
+    chips:["ITOM","CMDB","自動検出"] },
+
+  { cat:"Discovery", en:"Discovery Schedule", ja:"ディスカバリースケジュール",
+    def:"Discoveryを実行するための設定オブジェクト。対象IPアドレス範囲、使用するMID Server、実行頻度（スケジュール）、使用するCredential、Throttle設定などを定義する。",
+    chips:["IP範囲","スケジュール","MID Server"] },
+
+  { cat:"Discovery", en:"Scanning Phase", ja:"スキャンフェーズ",
+    def:"Discoveryの第1フェーズ。指定されたIPアドレス範囲に対してICMP（ping）やTCPポートスキャンを実行し、応答があったデバイスを発見する。発見したデバイスを次のClassificationフェーズに渡す。",
+    chips:["第1フェーズ","ICMP","TCPポートスキャン"] },
+
+  { cat:"Discovery", en:"Classification Phase", ja:"クラシフィケーションフェーズ",
+    def:"Discoveryの第2フェーズ。Scanningで発見されたデバイスのOSタイプ（Windows、Linux、ネットワーク機器など）を特定する。特定したOS情報を基にExplorationフェーズの手法を決定する。",
+    chips:["第2フェーズ","OSタイプ特定","デバイス分類"] },
+
+  { cat:"Discovery", en:"Identification Phase", ja:"アイデンティフィケーションフェーズ",
+    def:"Discoveryの第3フェーズ。IRE（Identification and Reconciliation Engine）を使用して、発見されたCIがCMDB上の既存レコードと同一かどうかを判断する。重複作成を防ぐ重要なフェーズ。",
+    chips:["第3フェーズ","IRE","重複防止"] },
+
+  { cat:"Discovery", en:"Exploration Phase", ja:"エクスプロレーションフェーズ",
+    def:"Discoveryの第4フェーズ。Classificationで特定されたOSタイプに応じたProbeを実行し、インストール済みソフトウェア、実行中プロセス、ハードウェア情報などの詳細データを収集する。",
+    chips:["第4フェーズ","Probe実行","詳細情報収集"] },
+
+  { cat:"Discovery", en:"Horizontal Discovery", ja:"ホリゾンタルディスカバリー",
+    def:"従来のIPスキャンベースのDiscovery手法。IPアドレス範囲をスキャンして個々のデバイス・CIを発見する。CI単体の発見に特化しており、CI間のリレーション（依存関係）は発見しない。",
+    chips:["IPスキャン","CI単体","オンプレミス"] },
+
+  { cat:"Discovery", en:"Quick Discovery", ja:"クイックディスカバリー",
+    def:"特定の単一IPアドレスまたはホスト名を指定して即座に実行できる単発Discoveryの機能。定期スケジュールとは別に、特定デバイスのCI更新やトラブルシューティング時に使用する。",
+    chips:["単発実行","即時","トラブルシューティング"] },
+
+  { cat:"Discovery", en:"Throttle", ja:"スロットル（同時実行制限）",
+    def:"MID ServerがDiscovery中に同時に実行できるProbeの最大数を制限する設定。ネットワーク帯域やターゲットデバイスへの負荷を軽減し、本番環境への影響を最小化するために使用する。",
+    chips:["負荷軽減","同時実行数","パフォーマンス"] },
+
+  { cat:"Discovery", en:"Discovery Exclusions", ja:"ディスカバリー除外リスト",
+    def:"Discoveryスキャン対象から除外するIPアドレス・ホスト名・サブネットを登録するリスト。Discoveryを実行してはいけないシステム（テスト環境、機密サーバー、プリンター等）を指定する。",
+    chips:["除外設定","IP除外","スキャン対象外"] },
+
+  { cat:"Discovery", en:"Agentless Discovery", ja:"エージェントレスディスカバリー",
+    def:"ターゲットデバイスにエージェントソフトウェアをインストールせず、MID ServerからSSH、WMI、SNMPなどのリモートプロトコルを使ってデバイス情報を収集するDiscovery方式。",
+    chips:["エージェント不要","SSH","WMI","SNMP"] },
+
+  { cat:"Discovery", en:"Discovery Source", ja:"ディスカバリーソース",
+    def:"CIデータを提供したツール・システムを示すCMDBフィールドの値。ServiceNow Discoveryの場合は「ServiceNow」が設定される。Reconciliation Priorityの基準として使用される。",
+    chips:["CMDBフィールド","データソース","Reconciliation"] },
+
+  { cat:"Discovery", en:"CI Reclassification", ja:"CIの再分類",
+    def:"Discoveryが既存CIレコードを再発見した際に、現在のCIクラスと異なるクラスと判断した場合に発生するイベント。例：GeneralサーバーがWindowsServerとして再分類される。管理者による確認が必要なケースもある。",
+    chips:["CIクラス変更","再分類","Discovery"] },
+
+  { cat:"Discovery", en:"Stale CI", ja:"陳腐化したCI（ステールCI）",
+    def:"一定期間Discoveryで更新されなかったCIレコード。デバイスが廃止・撤去されたにもかかわらずCMDBに残っている可能性がある。CI Staleness Ruleで検出・管理する。",
+    chips:["データ品質","廃止デバイス","CMDB管理"] },
+
+  { cat:"Discovery", en:"Orphan CI", ja:"孤立CI（オーファンCI）",
+    def:"CMDBに存在するが、いかなるビジネスサービスやITサービスとも関連付けられていないCI。Service Mappingと組み合わせて定期的にOrphan CIを特定し、CMDB品質を維持することが重要。",
+    chips:["CMDB品質","リレーション欠如","サービス未接続"] },
+
+  { cat:"Discovery", en:"IPv6 Discovery", ja:"IPv6ディスカバリー",
+    def:"ServiceNow DiscoveryがIPv6アドレス空間をスキャンする機能。Discovery Scheduleの対象範囲にIPv6のCIDR表記（例：2001:db8::/32）を指定することで有効化できる。IPv4と同様のフェーズで実行される。",
+    chips:["IPv6","CIDR","次世代ネットワーク"] },
+
+  // ===== Credentials (8枚) =====
+  { cat:"Credentials", en:"Discovery Credential", ja:"ディスカバリークレデンシャル",
+    def:"MID ServerがDiscovery対象デバイスへのアクセスに使用する認証情報（ユーザー名・パスワード・SSH鍵など）を暗号化して安全に保存するServiceNowのレコード。",
+    chips:["認証情報","暗号化","SSH","WMI"] },
+
+  { cat:"Credentials", en:"Credential Applicability", ja:"クレデンシャル適用範囲",
+    def:"どのIPアドレス範囲やタグに対してそのCredentialを試行するかを制限する設定。無関係なデバイスへの認証試行を防ぎ、アカウントロックアウトのリスクを軽減する。",
+    chips:["IP範囲","アカウントロック防止","最適化"] },
+
+  { cat:"Credentials", en:"SSH Public Key Auth", ja:"SSH公開鍵認証",
+    def:"LinuxサーバーへのSSH接続でパスワードの代わりに公開鍵/秘密鍵のペアを使用する認証方式。パスワード認証より安全で、ServiceNowのCredentialレコードにSSH秘密鍵を設定して使用する。",
+    chips:["公開鍵","秘密鍵","セキュリティ","Linux"] },
+
+  { cat:"Credentials", en:"WMI Credential", ja:"WMIクレデンシャル",
+    def:"Windows Management Instrumentationを使用してWindowsデバイスにアクセスするための認証情報。Windowsのシステム情報、インストール済みソフトウェア、プロセス情報などの収集に使用する。",
+    chips:["Windows","WMI","ドメイン認証"] },
+
+  { cat:"Credentials", en:"SNMP Community String", ja:"SNMPコミュニティ文字列",
+    def:"SNMPv1/v2cで使用する平文のパスワード代替文字列。ネットワーク機器へのSNMPアクセスを制御する。デフォルトは「public」（読み取り）と「private」（書き込み）だが、セキュリティのため変更が推奨される。",
+    chips:["SNMPv1/v2c","平文","ネットワーク機器"] },
+
+  { cat:"Credentials", en:"SNMPv3 Credential", ja:"SNMPv3クレデンシャル",
+    def:"SNMPv1/v2cと異なり、ユーザー認証（MD5/SHA）とデータ暗号化（DES/AES）をサポートするセキュアなSNMP認証方式。エンタープライズ環境でのネットワーク機器管理に推奨される。",
+    chips:["MD5","SHA","AES","暗号化"] },
+
+  { cat:"Credentials", en:"JDBC Credential", ja:"JDBCクレデンシャル",
+    def:"データベースサーバー（Oracle、MySQL、SQL Server等）へのJDBC接続に使用する認証情報。DatabaseのDiscoveryやSAM（Software Asset Management）連携で、DBインスタンス情報を収集する際に必要。",
+    chips:["データベース","Oracle","MySQL","SQL Server"] },
+
+  { cat:"Credentials", en:"Credential-less Discovery", ja:"クレデンシャルレスディスカバリー",
+    def:"認証情報なしでICMP（ping）やSNMP基本情報のみを使用してデバイスの存在と基本ネットワーク情報を取得する軽量Discoveryモード。詳細なCI情報の収集には認証情報が別途必要。",
+    chips:["認証不要","ICMP","基本情報のみ"] },
+
+  // ===== Probes & Sensors (8枚) =====
+  { cat:"Probes & Sensors", en:"Probe", ja:"プローブ",
+    def:"MID Serverを介してターゲットデバイスからデータを収集するスクリプト。SSH、WMI、SNMPなどのプロトコルを使用してデバイスに接続し、生データを収集してSensorに渡す。",
+    chips:["データ収集","MID Server","スクリプト"] },
+
+  { cat:"Probes & Sensors", en:"Sensor", ja:"センサー",
+    def:"Probeが収集した生データを解析・変換してCMDBにCI情報として書き込むスクリプト。ServiceNow側（インスタンス上）で実行され、収集データを適切なCIクラスのフィールドにマッピングする。",
+    chips:["データ変換","CMDB書き込み","解析"] },
+
+  { cat:"Probes & Sensors", en:"Shazzam Probe", ja:"シャザムプローブ（ポートスキャナー）",
+    def:"Discovery Scanningフェーズで使用されるTCP/UDPポートスキャンProbe。指定されたIPアドレスへのポートスキャンを実行し、開いているポートから動作しているサービスを推測する。",
+    chips:["ポートスキャン","Scanning","TCP/UDP"] },
+
+  { cat:"Probes & Sensors", en:"SNMP Probe", ja:"SNMPプローブ",
+    def:"SNMPプロトコルを使用してネットワーク機器（ルーター、スイッチ、プリンターなど）のMIBデータを収集するProbe。SNMPv1/v2cではコミュニティ文字列、SNMPv3では認証情報が必要。",
+    chips:["SNMP","MIB","ネットワーク機器"] },
+
+  { cat:"Probes & Sensors", en:"Run Script Probe", ja:"ランスクリプトプローブ",
+    def:"標準Probeでは対応できないカスタムアプリケーションや独自プロセスの情報収集に使用するProbe。Jython等でカスタムスクリプトを記述してMID Server上で実行させることができる。",
+    chips:["カスタムスクリプト","Jython","拡張性"] },
+
+  { cat:"Probes & Sensors", en:"Trigger CI Probe", ja:"トリガーCIプローブ",
+    def:"Explorationフェーズで発見されたCIに対してさらなる情報収集（下位探索）を行うためのProbeを起動するトリガー。例：サーバーを発見後、そのサーバー上のデータベースをさらに探索する際に使用する。",
+    chips:["連鎖探索","Exploration","下位CI発見"] },
+
+  { cat:"Probes & Sensors", en:"Windows - Installed Software Probe", ja:"Windowsインストール済みソフトウェアプローブ",
+    def:"WMIを使用してWindowsデバイスにインストール済みのソフトウェア情報を収集するProbe。SAM（Software Asset Management）と連携してソフトウェアライセンス管理に活用される。",
+    chips:["WMI","ソフトウェア管理","SAM連携"] },
+
+  { cat:"Probes & Sensors", en:"OS Classification Probe", ja:"OSクラシフィケーションプローブ",
+    def:"ClassificationフェーズでデバイスのOSタイプを特定するために使用されるProbe。TCPバナー取得やSNMP OID照合などの手法でOSを識別し、以降のExplorationで使用するProbeセットを決定する。",
+    chips:["OS識別","Classification","バナー取得"] },
+
+  // ===== Patterns (10枚) =====
+  { cat:"Patterns", en:"Discovery Pattern", ja:"ディスカバリーパターン",
+    def:"従来のProbe/Sensorよりも柔軟で拡張性の高い方法でCIの発見ロジックを定義するフレームワーク。GUIベースのPattern Designerで視覚的にステップを組み合わせてDiscovery/Service Mappingのロジックを構築できる。",
+    chips:["GUI","ステップベース","柔軟性"] },
+
+  { cat:"Patterns", en:"Pattern Designer", ja:"パターンデザイナー",
+    def:"Discovery PatternやService Mappingパターンをコードを書かずにGUIで作成・編集・テストできるServiceNowのツール。ステップのドラッグ&ドロップ配置、テスト実行、デバッグ機能を提供する。",
+    chips:["GUI","ノーコード","テスト","デバッグ"] },
+
+  { cat:"Patterns", en:"Connection Step", ja:"接続ステップ",
+    def:"パターン内でSSH、WMI、SNMP、HTTPなどのプロトコルを使ってターゲットデバイスに接続するための手順。使用するCredentialもConnection Stepで指定する。",
+    chips:["SSH","WMI","SNMP","HTTP","接続"] },
+
+  { cat:"Patterns", en:"Parse Step", ja:"パースステップ",
+    def:"コマンドやAPIの実行結果（テキスト・JSON・XML等）を解析して、必要な属性値を抽出するパターンステップ。正規表現、JSONパス、XMLパスなどを使って特定の値を取り出せる。",
+    chips:["正規表現","JSON","XML","データ抽出"] },
+
+  { cat:"Patterns", en:"Identification Step", ja:"アイデンティフィケーションステップ",
+    def:"パターン内でIRE（Identification and Reconciliation Engine）を呼び出し、収集したCIデータをCMDB既存レコードと照合するステップ。重複がなければ新規作成、既存があれば更新する。",
+    chips:["IRE","重複チェック","CMDB更新"] },
+
+  { cat:"Patterns", en:"Variable Step", ja:"バリアブルステップ",
+    def:"パターン内で変数を定義・設定するステップ。後続ステップで使用する値を変数として格納し、パターン全体でデータを受け渡すために使用する。コレクションを扱うList変数も定義できる。",
+    chips:["変数定義","データ受け渡し","List変数"] },
+
+  { cat:"Patterns", en:"HTTP Step", ja:"HTTPステップ",
+    def:"パターン内でREST APIなどの外部HTTPエンドポイントにリクエストを送信するステップ。クラウドAPIや独自Webサービスからのデータ収集に使用する。GET・POST・PUTなどのHTTPメソッドをサポート。",
+    chips:["REST API","クラウドAPI","HTTP","外部接続"] },
+
+  { cat:"Patterns", en:"Library Pattern", ja:"ライブラリパターン",
+    def:"複数のDiscovery/Service Mappingパターンから共通処理として呼び出せる再利用可能なパターンモジュール。「OSバージョン取得」などの共通ロジックをLibrary Patternとして定義し、複数パターンで共有できる。",
+    chips:["再利用","共通処理","モジュール化"] },
+
+  { cat:"Patterns", en:"Debug Pattern", ja:"パターンデバッグ",
+    def:"Pattern DesignerでDiscoveryパターンを実行・デバッグする機能。特定のホストを指定してパターンをテスト実行し、各ステップの実行結果・変数値・エラーをリアルタイムで確認できる。",
+    chips:["テスト実行","ステップ確認","デバッグ"] },
+
+  { cat:"Patterns", en:"Database Pattern (JDBC)", ja:"データベースパターン（JDBC）",
+    def:"JDBCを使用してOracleやSQL ServerなどのRDBMSに接続し、データベースインスタンス・スキーマ・テーブル情報などをCIとして発見するDiscoveryパターン。JDBCドライバをMID Server Extensionsで追加する必要がある。",
+    chips:["JDBC","Oracle","SQL Server","DB Discovery"] },
+
+  // ===== CMDB (15枚) =====
+  { cat:"CMDB", en:"CMDB", ja:"構成管理データベース",
+    def:"Configuration Management Databaseの略。ITインフラのすべてのコンポーネント（CI）とその関係性を記録・管理するデータベース。ServiceNowではcmdb_ciテーブルを中心とした階層構造で実装されている。",
+    chips:["CI管理","テーブル構造","ITIL"] },
+
+  { cat:"CMDB", en:"CI (Configuration Item)", ja:"構成アイテム",
+    def:"ITサービスの提供に関連するすべての管理対象コンポーネント。サーバー、ネットワーク機器、アプリケーション、データベース、仮想マシンなどが代表例。CMDBで管理される基本単位。",
+    chips:["管理対象","サーバー","アプリケーション","ネットワーク機器"] },
+
+  { cat:"CMDB", en:"IRE (Identification and Reconciliation Engine)", ja:"識別・調整エンジン",
+    def:"Identification and Reconciliation Engineの略。Discoveryが収集したCIデータとCMDB既存レコードを照合して重複を防ぎ、複数ソースからのデータを統合・調整するServiceNowのコアエンジン。",
+    chips:["重複防止","データ統合","コアエンジン"] },
+
+  { cat:"CMDB", en:"Identification Rules", ja:"識別ルール",
+    def:"IREがCIの同一性を判断するためのルール定義。シリアル番号、FQDN、MACアドレスなどのユニーク属性の組み合わせで「このCIは同一かどうか」を判断する。CIクラスごとに設定できる。",
+    chips:["シリアル番号","FQDN","MACアドレス","同一性判断"] },
+
+  { cat:"CMDB", en:"Reconciliation", ja:"調整（リコンシリエーション）",
+    def:"複数のDiscoveryソース（ServiceNow Discovery、SCCM等）からのデータを統合し、最も信頼性の高い情報でCIを更新するプロセス。Reconciliation Priorityで優先ソースを定義する。",
+    chips:["複数ソース統合","優先度","データ品質"] },
+
+  { cat:"CMDB", en:"Reconciliation Priority", ja:"調整優先度",
+    def:"複数のDiscoveryソースが同じCIフィールドに異なる値を提供した場合、どのソースのデータを最終値として採用するかを決定する優先順位設定。数値が小さいほど優先度が高い。",
+    chips:["ソース優先度","データ上書き制御","IRE"] },
+
+  { cat:"CMDB", en:"CI Class", ja:"CIクラス",
+    def:"CMDBのCIを分類するためのテーブル構造。cmdb_ciを基底クラスとして、cmdb_ci_server（サーバー）、cmdb_ci_appl（アプリケーション）などの子クラスが階層的に定義されている。",
+    chips:["テーブル階層","継承","分類"] },
+
+  { cat:"CMDB", en:"CI Class Manager", ja:"CIクラスマネージャー",
+    def:"CMDBのCI階層（cmdb_ciとその子クラス）を視覚的に確認・管理するツール。CIクラスの属性定義、識別ルール、調整ルール、CMDB健全性ルールをクラスごとに設定できる。",
+    chips:["GUI管理","クラス設定","識別ルール設定"] },
+
+  { cat:"CMDB", en:"CMDB Health Dashboard", ja:"CMDBヘルスダッシュボード",
+    def:"CMDBデータの品質を「正確性（Correctness）」「完全性（Completeness）」「コンプライアンス（Compliance）」の3つの観点でスコアリング・可視化するダッシュボード。",
+    chips:["データ品質","正確性","完全性","コンプライアンス"] },
+
+  { cat:"CMDB", en:"CMDB Baseline", ja:"CMDBベースライン",
+    def:"特定時点のCI構成情報をスナップショットとして保存する機能。変更管理や問題管理において「以前との差分」を確認するために使用する。リリース前後の変更比較や障害調査に有効。",
+    chips:["スナップショット","変更比較","差分確認"] },
+
+  { cat:"CMDB", en:"CSDM (Common Service Data Model)", ja:"共通サービスデータモデル",
+    def:"Common Service Data Modelの略。ServiceNowがCMDB設計の標準として提供するフレームワーク。Technical Service、Business Application、Application Serviceなど、ITサービスを適切に分類・階層化するためのベストプラクティス。",
+    chips:["標準フレームワーク","サービス分類","階層化"] },
+
+  { cat:"CMDB", en:"Technical Service (CSDM)", ja:"テクニカルサービス（CSDM）",
+    def:"CSDMにおける分類の一つ。特定のビジネス機能を直接支えるITシステム（例：メールシステム、Active Directory）を表す。Business Applicationより低い抽象度でITインフラ寄りの概念。",
+    chips:["CSDM","インフラ寄り","IT分類"] },
+
+  { cat:"CMDB", en:"Business Application (CSDM)", ja:"ビジネスアプリケーション（CSDM）",
+    def:"CSDMにおける分類の一つ。ビジネスプロセスをサポートするアプリケーション（例：Salesforce、SAP HR）を表す。Technical Serviceより抽象度が高く、ビジネス機能に近い概念。",
+    chips:["CSDM","ビジネス機能","アプリケーション"] },
+
+  { cat:"CMDB", en:"Impact Analysis", ja:"影響分析",
+    def:"CMDBのCI間リレーションを活用して、あるCIの障害や変更が他のCIやビジネスサービスに与える影響範囲を特定する分析機能。変更管理やインシデント対応でリスク評価に使用する。",
+    chips:["依存関係","変更管理","リスク評価"] },
+
+  { cat:"CMDB", en:"Service Graph Connector", ja:"サービスグラフコネクター",
+    def:"Ansible、Puppet、SCCM等のサードパーティ構成管理ツールのデータをCMDBに統合するための事前構築されたコネクター。IREエンジンと連携して重複を防ぎながらCIデータを取り込む。",
+    chips:["サードパーティ統合","事前構築","SCCM","Ansible"] },
+
+  // ===== Service Mapping (12枚) =====
+  { cat:"Service Mapping", en:"Service Mapping", ja:"サービスマッピング",
+    def:"ビジネスサービスを起点にアプリケーションとその依存関係（CI間のリレーション）を自動発見するTop-down Discovery手法。アプリケーション依存関係マップ（サービスマップ）をCMDBに構築する。",
+    chips:["Top-down","依存関係","ビジネスサービス"] },
+
+  { cat:"Service Mapping", en:"Entry Point", ja:"エントリーポイント",
+    def:"Service Mappingのトポロジー探索を開始する起点となるCI。通常はロードバランサーやWebサーバーのIPアドレス+ポート番号の組み合わせで定義し、ここから下位CIへ再帰的に依存関係を発見する。",
+    chips:["起点CI","IPアドレス","ポート","再帰探索"] },
+
+  { cat:"Service Mapping", en:"Application Dependency Map", ja:"アプリケーション依存関係マップ",
+    def:"Service Mappingによって発見されたビジネスサービスとその基盤となるITコンポーネント（Webサーバー、APサーバー、DB、ネットワーク機器等）の依存関係を視覚的に表示するマップ。",
+    chips:["視覚化","依存関係","サービスマップ"] },
+
+  { cat:"Service Mapping", en:"Top-down Discovery", ja:"トップダウンディスカバリー",
+    def:"ビジネスサービスという上位概念から出発して下位のITコンポーネントへ向かって依存関係を発見するDiscovery手法。Service Mappingで使用される。Horizontal Discoveryとは逆のアプローチ。",
+    chips:["サービス視点","依存関係発見","Service Mapping"] },
+
+  { cat:"Service Mapping", en:"Candidate CI", ja:"候補CI（キャンディデートCI）",
+    def:"Service MappingまたはDiscoveryで発見されたが、IREの識別ルールによる確認が完了する前の暫定CIレコード。識別完了後に正式なCIとしてCMDBに登録されるか、既存CIにマージされる。",
+    chips:["暫定CI","IRE確認前","識別待ち"] },
+
+  { cat:"Service Mapping", en:"Traffic-based Discovery", ja:"トラフィックベースディスカバリー",
+    def:"実際のネットワークフロー（NetFlow、sFlow等）を解析してアプリケーション間の実際の通信依存関係を自動発見する機能。パターン未定義のアプリケーションの依存関係も発見できる。",
+    chips:["NetFlow","sFlow","実通信分析"] },
+
+  { cat:"Service Mapping", en:"Tag-based Discovery", ja:"タグベースディスカバリー",
+    def:"AWSタグ（例：Service=WebApp, Env=Prod）やAzureタグを利用してクラウドリソースをビジネスサービスに自動マッピングする機能。クラウド環境のサービスマップ作成を効率化する。",
+    chips:["AWSタグ","Azureタグ","クラウドマッピング"] },
+
+  { cat:"Service Mapping", en:"Mapping Assist", ja:"マッピングアシスト",
+    def:"Service Mappingで自動発見できなかったCIやリレーションをSME（Subject Matter Expert）が手動で追加・修正できるGUIツール。自動Discoveryと手動修正を組み合わせてより正確なサービスマップを作成する。",
+    chips:["手動補完","GUI","SME","精度向上"] },
+
+  { cat:"Service Mapping", en:"Near Real-time Service Mapping", ja:"ニアリアルタイムサービスマッピング",
+    def:"定期的なスケジュール実行ではなく、CIの変更イベントをトリガーにして準リアルタイムでサービスマップを更新する機能。インフラ変更がサービスマップにほぼリアルタイムに反映される。",
+    chips:["リアルタイム","イベントトリガー","自動更新"] },
+
+  { cat:"Service Mapping", en:"Business Service", ja:"ビジネスサービス",
+    def:"CMDBにおけるビジネス観点のサービスを表すCIクラス（cmdb_ci_service）。Service Mappingではビジネスサービスを起点にITコンポーネントの依存関係が構築される。インシデント管理と連携してサービス影響分析に活用する。",
+    chips:["cmdb_ci_service","サービス管理","ITSM連携"] },
+
+  { cat:"Service Mapping", en:"Service Mapping Pattern", ja:"サービスマッピングパターン",
+    def:"特定のアプリケーション（Apache、Tomcat、Oracle DB等）のプロセス、ポート、設定ファイルを検出してCIとリレーションとしてCMDBに記録するためのロジック定義。Pattern Designerで作成・管理する。",
+    chips:["アプリケーション検出","プロセス","ポート","設定ファイル"] },
+
+  { cat:"Service Mapping", en:"Dependent Application", ja:"依存アプリケーション",
+    def:"Service Mappingにおいて、あるアプリケーション（例：Webサーバー）が別のアプリケーション（例：データベース）に依存している関係。この依存関係がサービスマップのエッジ（矢印）として表現される。",
+    chips:["依存関係","リレーション","サービスマップ"] },
+
+  // ===== Cloud Discovery (8枚) =====
+  { cat:"Cloud Discovery", en:"Cloud Discovery", ja:"クラウドディスカバリー",
+    def:"AWS、Azure、GCP等のクラウドプロバイダーのAPIを使用してクラウドリソース（EC2、VM、RDS等）を発見しCMDBにCIとして記録する機能。クラウドネイティブのAPIを活用するためエージェント不要。",
+    chips:["AWS","Azure","GCP","クラウドAPI"] },
+
+  { cat:"Cloud Discovery", en:"AWS IAM Role", ja:"AWSのIAMロール（Discovery用）",
+    def:"AWS DiscoveryでServiceNowがAWS APIにアクセスするための権限設定。EC2上のMID Serverを使用する場合はIAMロール（インスタンスプロファイル）を、外部MID Serverにはアクセスキー/シークレットキーを使用する。",
+    chips:["IAM","アクセスキー","インスタンスプロファイル"] },
+
+  { cat:"Cloud Discovery", en:"Azure Service Principal", ja:"Azureサービスプリンシパル",
+    def:"Azure DiscoveryでServiceNowがAzure Resource Manager APIにアクセスするためのAzure ADアプリ登録。テナントID、クライアントID（アプリID）、クライアントシークレットの3つが認証に必要。",
+    chips:["Azure AD","テナントID","クライアントID","シークレット"] },
+
+  { cat:"Cloud Discovery", en:"GCP Service Account", ja:"GCPサービスアカウント",
+    def:"GCP DiscoveryでServiceNowがGoogle Cloud APIにアクセスするための認証主体。サービスアカウントのJSONキーをCredentialレコードに設定するか、GCE上のMID ServerではWorkload Identityを使用する。",
+    chips:["JSONキー","Workload Identity","GCE"] },
+
+  { cat:"Cloud Discovery", en:"Cloud Management Platform (CMP)", ja:"クラウド管理プラットフォーム",
+    def:"クラウドリソース（VM、ストレージ等）のプロビジョニングとライフサイクル管理を担うServiceNowの機能。Discoveryと組み合わせることで、プロビジョニングされたリソースを自動的にCMDBに記録・管理できる。",
+    chips:["プロビジョニング","ライフサイクル管理","Discovery連携"] },
+
+  { cat:"Cloud Discovery", en:"Kubernetes Discovery", ja:"Kubernetesディスカバリー",
+    def:"Kubernetesクラスター上のNamespace、Pod、Service、Deployment等のリソースを発見してCMDBにCIとして記録する機能。Kubernetes APIに接続するためのサービスアカウントとRBAC設定が必要。",
+    chips:["K8s","Pod","Namespace","RBAC"] },
+
+  { cat:"Cloud Discovery", en:"Terraform Integration", ja:"Terraform連携",
+    def:"TerraformでプロビジョニングされたITリソースのデータをCMDBに取り込む方法。Service Graph Connector（Terraform用）やTerraform Cloud/Enterprise連携を使用して、IaCで管理されるリソースのCI情報をCMDBに同期する。",
+    chips:["IaC","Infrastructure as Code","プロビジョニング自動化"] },
+
+  { cat:"Cloud Discovery", en:"Multi-cloud Discovery", ja:"マルチクラウドディスカバリー",
+    def:"AWS、Azure、GCPなど複数のクラウドプロバイダーを一つのServiceNowインスタンスで統合管理するDiscovery構成。各クラウド用のCredentialとCloud Discovery Scheduleを個別に設定し、発見リソースを統一CMDBで管理する。",
+    chips:["AWS","Azure","GCP","統合管理"] },
+
+  // ===== ITOM (8枚) =====
+  { cat:"ITOM", en:"ITOM (IT Operations Management)", ja:"ITオペレーション管理",
+    def:"IT Operations Managementの略。ServiceNowが提供するITオペレーション管理製品群の総称。Discovery、Event Management、Service Mapping、Orchestrationなどのモジュールで構成される。",
+    chips:["製品群","Discovery","Event Management","Orchestration"] },
+
+  { cat:"ITOM", en:"ITOM Visibility", ja:"ITOMビジビリティ",
+    def:"Discovery、Event Management、Service Mappingを組み合わせてITインフラ全体をリアルタイムで可視化するITOMのパッケージ。正確なCMDBデータの維持とサービスへの影響の迅速な把握を実現する。",
+    chips:["リアルタイム可視化","CMDB正確性","サービス影響"] },
+
+  { cat:"ITOM", en:"Event Management", ja:"イベント管理",
+    def:"ネットワーク監視ツール（Nagios、SolarWinds等）からのアラートを収集・相関分析してインシデントと連携させるITOMの機能。アラートのノイズを削減し、根本原因の特定を効率化する。",
+    chips:["アラート相関","Nagios","SolarWinds","インシデント連携"] },
+
+  { cat:"ITOM", en:"Alert Correlation", ja:"アラート相関分析",
+    def:"Event ManagementがCorrelation Rulesを使用して関連する複数のアラートをグループ化・集約する機能。同一根本原因から発生する大量のアラートを1件のインシデントとして管理し、対応効率を向上させる。",
+    chips:["ノイズ削減","根本原因","インシデント集約","Correlation Rules"] },
+
+  { cat:"ITOM", en:"Health Log Analytics (HLA)", ja:"ヘルスログアナリティクス",
+    def:"機械学習を使用して大量のログデータを分析し、ITインフラの異常や問題を自動検出するITOMの機能（AIOps）。Event Managementと連携してITオペレーションの可視性を向上させる。",
+    chips:["AIOps","機械学習","ログ分析","異常検出"] },
+
+  { cat:"ITOM", en:"Orchestration", ja:"オーケストレーション",
+    def:"MID Serverを通じてITインフラ上でスクリプトやコマンドを実行し、プロビジョニング・設定変更・修復などのタスクを自動化するITOMの機能。ITILプロセスと連携してChange後の自動処理などに活用する。",
+    chips:["自動化","プロビジョニング","修復","ITILプロセス連携"] },
+
+  { cat:"ITOM", en:"ITOM Premium", ja:"ITOMプレミアム",
+    def:"ITOM VisibilityにさらにHealth Log Analytics（HLA/AIOps）を加えたServiceNowのITOMパッケージ。Discovery、Event Management、Service Mapping、HLAをすべて含み、ITオペレーションの完全な可視化と自動化を実現する。",
+    chips:["HLA","AIOps","フルパッケージ","可視化+自動化"] },
+
+  { cat:"ITOM", en:"VMware vCenter Discovery", ja:"VMware vCenter ディスカバリー",
+    def:"VMware vCenter/ESXiの仮想化環境をDiscoveryする機能。VMware APIを使用してVM、ESXiホスト、データストア等を発見しCMDBに記録する。vCenter URLとDiscovery用アカウントのCredentialが必要。",
+    chips:["VMware","仮想化","vCenter API","ESXi"] },
+
+  // ===== Integration (6枚) =====
+  { cat:"Integration", en:"ServiceNow Table API", ja:"テーブルAPI",
+    def:"ServiceNowが提供するREST APIの一つ。任意のテーブル（cmdb_ci等）のレコードをCRUD操作できる。外部システムからCMDB CIデータを取得したり、外部からCIを作成・更新したりするために使用する。",
+    chips:["REST API","CRUD","外部連携","cmdb_ci"] },
+
+  { cat:"Integration", en:"Import Set", ja:"インポートセット",
+    def:"外部データソースからServiceNowにデータを取り込むための中間テーブル機能。Transform MapでCMDBテーブルへのマッピングを定義し、IREエンジンを活用してCIを正しく作成・更新できる。",
+    chips:["データ取り込み","Transform Map","中間テーブル"] },
+
+  { cat:"Integration", en:"Transform Map", ja:"トランスフォームマップ",
+    def:"Import SetのデータをServiceNowのターゲットテーブル（cmdb_ci等）にマッピングするための定義。フィールドの対応関係、変換スクリプト、重複チェック方法などを設定する。",
+    chips:["フィールドマッピング","変換","Import Set","CMDBへの書き込み"] },
+
+  { cat:"Integration", en:"IntegrationHub", ja:"インテグレーションハブ",
+    def:"外部API（REST、SOAP等）との連携を簡素化するServiceNowのプラットフォーム。Flow DesignerのActionとして外部システムへのコールアウトを組み込め、Discoveryで取得しにくい外部情報の収集・統合に活用できる。",
+    chips:["REST","SOAP","外部連携","Flow Designer"] },
+
+  { cat:"Integration", en:"SCCM Connector", ja:"SCCMコネクター（Service Graph Connector for SCCM）",
+    def:"Microsoft SCCM（System Center Configuration Manager）のデータをServiceNow CMDBに統合するService Graph Connector。SCCMが管理するWindowsデバイスのCIデータをIREエンジン経由で正確に取り込む。",
+    chips:["Microsoft SCCM","Windows管理","CI同期"] },
+
+  { cat:"Integration", en:"SAM (Software Asset Management) Integration", ja:"SAM連携",
+    def:"ServiceNow Discovery（インストール済みソフトウェアのProbe）とSoftware Asset Management（SAM）を連携させることで、実際にインストールされているソフトウェアとライセンス数を照合し、コンプライアンス管理を行う。",
+    chips:["ソフトウェアライセンス","コンプライアンス","インストール実績"] }
+];
+
+// ============================================================
+// アプリ状態
+// ============================================================
+let activeCat     = "すべて";
+let learnedIds    = new Set();   // インデックス（全体）
+let deck          = [];          // 現在表示中のカードリスト（インデックス）
+let deckPos       = 0;
+let isFlipped     = false;
+
+const cats = ["すべて", ...Array.from(new Set(ALL_CARDS.map(c => c.cat)))];
+
+// ============================================================
+// 初期化
+// ============================================================
+window.onload = () => {
+  buildCatButtons();
+  buildDeck();
+  renderCard();
+};
+
+function buildCatButtons() {
+  const wrap = document.getElementById("cat-scroll");
+  cats.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "cat-btn" + (cat === activeCat ? " active" : "");
+    const count = cat === "すべて"
+      ? ALL_CARDS.length
+      : ALL_CARDS.filter(c => c.cat === cat).length;
+    btn.textContent = `${cat} (${count})`;
+    btn.onclick = () => selectCat(cat);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectCat(cat) {
+  activeCat = cat;
+  document.querySelectorAll(".cat-btn").forEach((b, i) => {
+    b.classList.toggle("active", cats[i] === cat);
+  });
+  buildDeck();
+  renderCard();
+}
+
+function buildDeck() {
+  const filtered = ALL_CARDS
+    .map((c, i) => i)
+    .filter(i => activeCat === "すべて" || ALL_CARDS[i].cat === activeCat)
+    .filter(i => !learnedIds.has(i));
+  deck = filtered;
+  deckPos = 0;
+}
+
+// ============================================================
+// 描画
+// ============================================================
+function renderCard() {
+  const learnedInCat = activeCat === "すべて"
+    ? learnedIds.size
+    : Array.from(learnedIds).filter(i => ALL_CARDS[i].cat === activeCat).length;
+  const totalInCat   = activeCat === "すべて"
+    ? ALL_CARDS.length
+    : ALL_CARDS.filter(c => c.cat === activeCat).length;
+
+  document.getElementById("learned-badge").textContent = `覚えた ${learnedInCat}枚`;
+  document.getElementById("pos-rem").textContent = deck.length;
+
+  if (deck.length === 0) {
+    document.getElementById("flip-wrap").style.display  = "none";
+    document.getElementById("completed-state").style.display = "block";
+    document.querySelector(".nav-controls").style.display = "none";
+    document.querySelector(".kbd-hint").style.display   = "none";
+    document.getElementById("completed-msg").textContent =
+      `${activeCat === "すべて" ? "全カテゴリ" : activeCat} の全 ${totalInCat} 枚を覚えました！`;
+    updateProgress(totalInCat, totalInCat);
+    return;
+  }
+
+  document.getElementById("flip-wrap").style.display  = "";
+  document.getElementById("completed-state").style.display = "none";
+  document.querySelector(".nav-controls").style.display = "flex";
+  document.querySelector(".kbd-hint").style.display   = "";
+
+  const idx  = deck[deckPos];
+  const card = ALL_CARDS[idx];
+
+  document.getElementById("pos-cur").textContent = deckPos + 1;
+  document.getElementById("pos-tot").textContent = deck.length;
+
+  document.getElementById("front-cat").textContent    = card.cat;
+  document.getElementById("front-term-en").textContent = card.en;
+  document.getElementById("front-term-ja").textContent = card.ja;
+  document.getElementById("back-def").textContent     = card.def;
+
+  const chipsEl = document.getElementById("back-chips");
+  chipsEl.innerHTML = "";
+  (card.chips || []).forEach(ch => {
+    const span = document.createElement("span");
+    span.className = "keyword-chip";
+    span.textContent = ch;
+    chipsEl.appendChild(span);
+  });
+
+  // ボタン
+  document.getElementById("btn-prev").disabled = deckPos === 0;
+  document.getElementById("btn-next").disabled = deckPos === deck.length - 1;
+
+  // カードを表に戻す
+  if (isFlipped) flipCard();
+
+  updateProgress(learnedInCat, totalInCat);
+}
+
+function updateProgress(learned, total) {
+  const pct = total === 0 ? 100 : Math.round((learned / total) * 100);
+  document.getElementById("prog-fill").style.width = pct + "%";
+}
+
+// ============================================================
+// カード操作
+// ============================================================
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById("flip-inner").classList.toggle("flipped", isFlipped);
+}
+
+function navigate(dir) {
+  const newPos = deckPos + dir;
+  if (newPos < 0 || newPos >= deck.length) return;
+  deckPos = newPos;
+  isFlipped = false;
+  renderCard();
+}
+
+function markLearned() {
+  if (deck.length === 0) return;
+  const idx = deck[deckPos];
+  learnedIds.add(idx);
+  deck.splice(deckPos, 1);
+  if (deckPos >= deck.length) deckPos = Math.max(0, deck.length - 1);
+  isFlipped = false;
+  renderCard();
+}
+
+function shuffleDeck() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  deckPos  = 0;
+  isFlipped = false;
+  renderCard();
+}
+
+// 覚えたリセット（現カテゴリのみ）
+function resetAll() {
+  const toReset = activeCat === "すべて"
+    ? Array.from({length: ALL_CARDS.length}, (_, i) => i)
+    : ALL_CARDS.map((c, i) => i).filter(i => ALL_CARDS[i].cat === activeCat);
+  toReset.forEach(i => learnedIds.delete(i));
+  buildDeck();
+  isFlipped = false;
+  renderCard();
+}
+
+// 全カテゴリを含めてリセット
+function resetLearned() {
+  learnedIds.clear();
+  buildDeck();
+  isFlipped = false;
+  renderCard();
+}
+
+// ============================================================
+// キーボードショートカット
+// ============================================================
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  switch(e.key) {
+    case "ArrowRight": case "l": navigate(1);       e.preventDefault(); break;
+    case "ArrowLeft":  case "h": navigate(-1);      e.preventDefault(); break;
+    case " ": flipCard();         e.preventDefault(); break;
+    case "Enter": markLearned();  e.preventDefault(); break;
+    case "r": case "R": resetAll(); break;
+    case "s": case "S": shuffleDeck(); break;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#4A1F61" />
+  <title>CIS-DF Udemy 第1回 模擬試験 | ServiceNow</title>
+  <style>
+    :root {
+      --sn-purple: #6B2D8B;
+      --sn-purple-light: #8B3FB5;
+      --sn-purple-dark: #4A1F61;
+      --sn-gray-bg: #f0f0f0;
+      --sn-gray-card: #ffffff;
+      --sn-gray-border: #d0d0d7;
+      --sn-gray-text: #293949;
+      --sn-gray-muted: #606060;
+      --sn-green: #0a8f4d;
+      --sn-red: #c4001d;
+      --sn-yellow: #e69900;
+      --sn-blue: #0054a6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Helvetica Neue", Arial, sans-serif; background: var(--sn-gray-bg); color: var(--sn-gray-text); min-height: 100vh; }
+
+    header { background: var(--sn-purple-dark); color: #fff; padding: 0 32px; height: 56px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100; }
+    header .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+    header .badge { background: var(--sn-purple-light); border-radius: 4px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+    header .badge2 { background: #e69900; border-radius: 4px; padding: 2px 10px; font-size: 12px; font-weight: 600; color: #fff; }
+
+    .container { max-width: 840px; margin: 36px auto; padding: 0 16px; }
+    .card { background: var(--sn-gray-card); border: 1px solid var(--sn-gray-border); border-radius: 8px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    #start-screen h1 { font-size: 26px; font-weight: 700; color: var(--sn-purple-dark); margin-bottom: 8px; }
+    #start-screen .subtitle { color: var(--sn-gray-muted); font-size: 14px; margin-bottom: 24px; }
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    .info-item { border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 16px; text-align: center; }
+    .info-item .num { font-size: 28px; font-weight: 700; color: var(--sn-purple); }
+    .info-item .label { font-size: 13px; color: var(--sn-gray-muted); margin-top: 4px; }
+
+    #quiz-screen { display: none; }
+    .progress-bar-wrap { background: #e0e0e8; border-radius: 4px; height: 6px; margin-bottom: 20px; overflow: hidden; }
+    .progress-bar-fill { background: var(--sn-purple); height: 100%; transition: width 0.3s ease; }
+    .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .q-counter { font-size: 13px; color: var(--sn-gray-muted); font-weight: 600; }
+    .q-category { background: var(--sn-purple-dark); color: #fff; border-radius: 4px; padding: 3px 10px; font-size: 12px; }
+    .q-text { font-size: 17px; font-weight: 600; line-height: 1.6; margin-bottom: 24px; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option { border: 2px solid var(--sn-gray-border); border-radius: 6px; padding: 14px 18px; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: border-color 0.15s, background 0.15s; font-size: 15px; min-height: 52px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .option:hover:not(.disabled) { border-color: var(--sn-purple-light); background: #f5eeff; }
+    .option .opt-letter { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--sn-gray-border); font-weight: 700; font-size: 13px; flex-shrink: 0; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .option.correct { border-color: var(--sn-green); background: #edfff5; }
+    .option.correct .opt-letter { background: var(--sn-green); border-color: var(--sn-green); color: #fff; }
+    .option.wrong { border-color: var(--sn-red); background: #fff0f2; }
+    .option.wrong .opt-letter { background: var(--sn-red); border-color: var(--sn-red); color: #fff; }
+    .option.show-correct { border-color: var(--sn-green); background: #edfff5; }
+    .option.show-correct .opt-letter { background: var(--sn-green); border-color: var(--sn-green); color: #fff; }
+    .option.disabled { cursor: default; }
+
+    .explanation-box { display: none; margin-top: 20px; padding: 16px; border-radius: 6px; border-left: 4px solid var(--sn-blue); background: #f0f6ff; font-size: 14px; line-height: 1.7; }
+    .explanation-box .exp-title { font-weight: 700; color: var(--sn-blue); margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .quiz-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 8px; }
+    .quiz-actions-right { display: flex; gap: 8px; }
+
+    .btn { padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background 0.15s, opacity 0.15s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .btn-primary { background: var(--sn-purple); color: #fff; }
+    .btn-primary:hover { background: var(--sn-purple-light); }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    .btn-secondary { background: transparent; color: var(--sn-purple); border: 2px solid var(--sn-purple); }
+    .btn-secondary:hover:not(:disabled) { background: #f5eeff; }
+    .btn-secondary:disabled { opacity: 0.4; cursor: default; }
+    .btn-ghost { background: transparent; color: var(--sn-gray-muted); border: 2px solid var(--sn-gray-border); }
+    .btn-ghost:hover { background: #f5f5f5; }
+
+    #result-screen { display: none; }
+    .result-header { text-align: center; padding-bottom: 24px; border-bottom: 1px solid var(--sn-gray-border); margin-bottom: 28px; }
+    .score-circle { width: 120px; height: 120px; border-radius: 50%; border: 6px solid var(--sn-purple); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .score-circle .score-num { font-size: 32px; font-weight: 800; color: var(--sn-purple); line-height: 1; }
+    .score-circle .score-label { font-size: 12px; color: var(--sn-gray-muted); }
+    .result-header h2 { font-size: 22px; font-weight: 700; }
+    .pass-badge { display: inline-block; margin-top: 8px; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+    .pass-badge.pass { background: #d4f5e5; color: var(--sn-green); }
+    .pass-badge.fail { background: #ffd9de; color: var(--sn-red); }
+    .stat-row { display: flex; gap: 12px; margin-bottom: 28px; }
+    .stat-box { flex: 1; border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 16px; text-align: center; }
+    .stat-box .stat-num { font-size: 24px; font-weight: 700; }
+    .stat-box .stat-label { font-size: 12px; color: var(--sn-gray-muted); margin-top: 4px; }
+    .stat-box.green .stat-num { color: var(--sn-green); }
+    .stat-box.red .stat-num { color: var(--sn-red); }
+    .stat-box.blue .stat-num { color: var(--sn-blue); }
+    .result-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+
+    .review-section h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: var(--sn-purple-dark); border-bottom: 2px solid var(--sn-purple); padding-bottom: 8px; }
+    .review-item { border: 1px solid var(--sn-gray-border); border-radius: 6px; padding: 18px; margin-bottom: 14px; }
+    .review-item .review-q-num { font-size: 12px; font-weight: 700; color: var(--sn-purple); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .review-item .review-q-text { font-size: 15px; font-weight: 600; margin-bottom: 12px; line-height: 1.5; }
+    .review-answer { font-size: 14px; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; }
+    .review-answer.your { background: #fff0f2; border-left: 3px solid var(--sn-red); }
+    .review-answer.correct { background: #edfff5; border-left: 3px solid var(--sn-green); }
+    .review-exp { margin-top: 10px; font-size: 13px; color: var(--sn-gray-muted); line-height: 1.6; padding: 10px 12px; background: #f8f8fa; border-radius: 4px; }
+
+    @media (max-width: 600px) {
+      header { padding: 0 16px; height: 50px; }
+      header .logo { font-size: 16px; }
+      .container { margin: 16px auto; padding: 0 12px; }
+      .card { padding: 18px 16px; border-radius: 6px; }
+      #start-screen h1 { font-size: 20px; }
+      .info-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+      .info-item { padding: 10px 6px; }
+      .info-item .num { font-size: 22px; }
+      .info-item .label { font-size: 11px; }
+      .q-text { font-size: 15px; margin-bottom: 16px; }
+      .option { padding: 12px 14px; font-size: 14px; gap: 10px; min-height: 52px; }
+      .option .opt-letter { width: 32px; height: 32px; font-size: 13px; flex-shrink: 0; }
+      .explanation-box { font-size: 13px; padding: 14px; }
+      .quiz-actions { flex-direction: column; gap: 10px; margin-top: 20px; }
+      .quiz-actions-right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+      .quiz-actions > .btn-ghost { order: 3; width: 100%; font-size: 12px; padding: 8px; color: var(--sn-gray-muted); border-color: #e0e0e0; }
+      .btn { font-size: 14px; padding: 13px 10px; border-radius: 6px; }
+      #next-btn, #prev-btn { width: 100%; font-size: 15px; padding: 14px 10px; }
+      .stat-row { flex-direction: column; gap: 8px; }
+      .result-header h2 { font-size: 18px; }
+      .result-actions { flex-direction: column; }
+      .result-actions .btn { width: 100%; text-align: center; font-size: 15px; padding: 14px; }
+      .review-item { padding: 14px 12px; }
+      .review-item .review-q-text { font-size: 14px; }
+    }
+    @media (max-width: 380px) {
+      .info-grid { grid-template-columns: 1fr; gap: 6px; }
+      .q-text { font-size: 14px; }
+      .option { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">ServiceNow</span>
+  <span class="badge">CIS-DF 模擬試験</span>
+  <span class="badge2">Udemy 第1回</span>
+</header>
+
+<div class="container">
+
+  <div class="card" id="start-screen">
+    <h1>CIS-DF Udemy 第1回 模擬問題</h1>
+    <p class="subtitle">Certified Implementation Specialist – Discovery &amp; Service Mapping Fundamentals</p>
+    <div class="info-grid">
+      <div class="info-item"><div class="num">75</div><div class="label">問題バンク</div></div>
+      <div class="info-item"><div class="num">40</div><div class="label">出題数（ランダム）</div></div>
+      <div class="info-item"><div class="num">65%</div><div class="label">合格ライン</div></div>
+    </div>
+    <p style="font-size:14px;color:var(--sn-gray-muted);margin-bottom:24px;line-height:1.7;">
+      Udemy第1回模擬試験（75問）からランダムに40問を出題します。<br>
+      CMDB・CSDM・IRE・データマネージャー・サービスマッピングなど主要トピックを網羅しています。
+    </p>
+    <button class="btn btn-primary" id="start-btn" style="font-size:15px;padding:12px 32px;">試験を開始する →</button>
+  </div>
+
+  <div class="card" id="quiz-screen">
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="q-meta">
+      <span class="q-counter" id="q-counter">問題 1 / 40</span>
+      <span class="q-category" id="q-category">CMDB</span>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options-container"></div>
+    <div class="explanation-box" id="explanation-box">
+      <div class="exp-title">解説</div>
+      <div id="explanation-text"></div>
+    </div>
+    <div class="quiz-actions">
+      <button class="btn btn-ghost" onclick="confirmAbort()">中断する</button>
+      <div class="quiz-actions-right">
+        <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()" disabled>← 前の問題</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>次の問題 →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="result-screen">
+    <div class="result-header">
+      <div class="score-circle">
+        <span class="score-num" id="score-num">-</span>
+        <span class="score-label">/ 40</span>
+      </div>
+      <h2 id="result-title">結果</h2>
+      <span class="pass-badge" id="pass-badge">-</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box green"><div class="stat-num" id="stat-correct">-</div><div class="stat-label">正解</div></div>
+      <div class="stat-box red"><div class="stat-num" id="stat-wrong">-</div><div class="stat-label">不正解</div></div>
+      <div class="stat-box blue"><div class="stat-num" id="stat-pct">-</div><div class="stat-label">正解率</div></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-primary" onclick="restartQuiz()">もう一度挑戦</button>
+      <button class="btn btn-secondary" onclick="showStart()">スタートに戻る</button>
+    </div>
+    <div class="review-section">
+      <h3>解答の振り返り</h3>
+      <div id="review-container"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  // ===== Q1 CSDM =====
+  {
+    category: "CSDM",
+    text: "CMDB管理者は、CSDMライフサイクルフィールドマッピングを活用してCSDMのベストプラクティスとの整合性を高めることを目指しています。「ライフサイクル同期を有効にする」ボタンを選択した後、次に取るべき手順は何ですか？",
+    options: [
+      "不一致レポートで特定された不完全なフィールドマッピングをすべて解決する",
+      "全CIに対してDiscoveryを実行してライフサイクルステータスを自動更新する",
+      "ServiceNow管理者に通知してライフサイクル同期の設定を確認させる",
+      "ライフサイクルステージのカスタムフィールドを作成してCIに適用する"
+    ],
+    answer: 0,
+    explanation: "「ライフサイクル同期を有効にする」を選択した後は、不一致レポートで特定された不完全なフィールドマッピングをすべて解決することが次のステップです。これによりCSDMのライフサイクルフィールドとCMDBの既存フィールドが正しく同期されます。"
+  },
+  // ===== Q2 CSDM =====
+  {
+    category: "CSDM",
+    text: "CMDBアーキテクトは、CSDMガイダンスに従いCMDBにデータを投入しようとしています。CSDMクロールステージを使用したCMDBへのデータ投入に関する意思決定には、組織内のどの主要関係者が関与すべきでしょうか？（2つ正解）",
+    options: [
+      "ITディレクターとセキュリティマネージャー",
+      "プロジェクトマネージャーとデータベース管理者",
+      "ビジネスサービスマネージャーとテクノロジーサービスオーナー",
+      "ヘルプデスクマネージャーとネットワーク管理者"
+    ],
+    answer: 2,
+    explanation: "CSDMクロールステージでのCMDBデータ投入の意思決定には、ビジネスサービスマネージャーとテクノロジーサービスオーナーが関与すべきです。これらの関係者はサービスの定義と所有権を持ち、CMDBデータが正確に反映されることを確認できます。"
+  },
+  // ===== Q3 CSDM =====
+  {
+    category: "CSDM",
+    text: "金融サービス会社のエンタープライズアーキテクトは、企業全体の各部門の業務能力を追跡したいと考えています。どのCSDM 5ドメインが使用されますか？",
+    options: [
+      "Foundation",
+      "設計・企画（デザイン）",
+      "運用（Operations）",
+      "サービス提供（Service Offering）"
+    ],
+    answer: 1,
+    explanation: "部門の業務能力を追跡するには、CSDM 5ドメインの「設計・企画（デザイン）」ドメインが使用されます。このドメインは組織の能力・機能・部門を管理するために使用されます。"
+  },
+  // ===== Q4 CMDBデータ基盤 =====
+  {
+    category: "CMDBデータ基盤",
+    text: "CMDB管理者は、CMDBデータ基盤ダッシュボードで提供されているプレイブックの使用を検討しています。この機能を活用するという決定を裏付けるメリットは何ですか？（2つ正解）",
+    options: [
+      "リアルタイムのアラートとビジネス影響の可視化を提供する",
+      "CMDBデータを外部ツールへエクスポートする機能とカスタマイズテンプレートを提供する",
+      "インシデント管理の自動化とCIのリアルタイム更新を提供する",
+      "パフォーマンスの低い指標への修復オプションと修復テンプレートを提供する"
+    ],
+    answer: 3,
+    explanation: "CMDBデータ基盤ダッシュボードのプレイブックは、パフォーマンスの低い指標に対処・改善するための修復オプションと修復テンプレートを提供します。これにより管理者は問題を体系的に解決できます。"
+  },
+  // ===== Q5 CMDB価値 =====
+  {
+    category: "CMDBビジネス価値",
+    text: "CMDBのビジネス上の価値はどれですか？（2つ正解）",
+    options: [
+      "インシデント管理と変更管理の効率化、業務の回復力強化",
+      "コスト削減とシステムのパフォーマンス最適化",
+      "ユーザー認証の強化とアクセス制御の管理",
+      "ネットワーク監視とセキュリティパッチの自動適用"
+    ],
+    answer: 0,
+    explanation: "CMDBの主なビジネス価値は「インシデント管理と変更管理の効率化」と「業務の回復力強化」です。CMDBはCIの関係性を可視化することで、障害の影響範囲特定や変更リスク評価を迅速化します。"
+  },
+  // ===== Q6 データマネージャー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "CMDB構成マネージャーは、CMDBデータマネージャーを使用して認証ポリシーに対して次のデータフィルターを設定します。テーブル：サーバー [cmdb_ci_server]、フィルター：オペレーティングシステム | 含む | サーバー または オペレーティングシステム | 含む | Linux。このポリシーの影響を受けるオペレーティングシステムはどれですか？（2つ正解）",
+    options: [
+      "Ubuntu ServerとRed Hat Enterprise Linux",
+      "Linux CentOSとWindows Server 2022 Datacenter",
+      "Windows Server 2019とmacOS Server",
+      "SUSE LinuxとCentOS Stream"
+    ],
+    answer: 1,
+    explanation: "フィルター「OSが『サーバー』を含む OR OSが『Linux』を含む」により、Windows Server 2022 Datacenter（「サーバー」を含む）とLinux CentOS（「Linux」を含む）が該当します。"
+  },
+  // ===== Q7 CMDBワークスペース =====
+  {
+    category: "CMDBワークスペース",
+    text: "CMDB構成管理チームは、識別および調整エンジン（IRE）を介してCMDBに取り込まれたデータから生成される重複排除タスクを管理したいと考えています。CMDBワークスペースのどの領域でこれらの重複排除タスクを見つけることができますか？",
+    options: [
+      "管理タブの重複排除ポリシー設定",
+      "CMDB 360タブの保存済みクエリウィンドウ",
+      "ホームタブの下にある重要なアクションタイル",
+      "健全性タブの重複スコアカード"
+    ],
+    answer: 2,
+    explanation: "重複排除タスクはCMDBワークスペースの「ホームタブ」にある「重要なアクションタイル」で確認できます。このタイルには対処が必要な重複排除タスクが一覧表示されます。"
+  },
+  // ===== Q8 CMDB健全性 =====
+  {
+    category: "CMDB健全性",
+    text: "CMDB管理者は、CMDB健全性ダッシュボードの「正確性スコアカード」にある「陳腐化度」指標を活用したいと考えています。このメトリックのデフォルトの期間はどれくらいですか？",
+    options: [
+      "60日間",
+      "30日間",
+      "90日間",
+      "180日間"
+    ],
+    answer: 0,
+    explanation: "CMDB健全性ダッシュボードの「正確性スコアカード」にある「陳腐化度」指標のデフォルト期間は60日間です。60日以上更新されていないCIが陳腐化しているとみなされます。"
+  },
+  // ===== Q9 CSDM =====
+  {
+    category: "CSDM",
+    text: "ある病院に新しいCTスキャナーが導入されました。在庫管理チームは、医師が患者の検査予約に使用できるカタログアイテムを作成しました。在庫管理チームは、カタログアイテムをどのCSDMドメインにマッピングすべきでしょうか？",
+    options: [
+      "設計・企画（デザイン）",
+      "Foundation",
+      "Walk",
+      "サービス提供（技術サービスの管理）"
+    ],
+    answer: 3,
+    explanation: "カタログアイテムは「サービス提供（技術サービスの管理）」ドメインにマッピングします。このドメインはサービスカタログアイテムやサービス提供に関連するエンティティを管理します。"
+  },
+  // ===== Q10 CMDB健全性 =====
+  {
+    category: "CMDB健全性",
+    text: "CMDB管理者は、CMDB内の古い構成アイテム（CI）を最小限に抑えたいと考えています。どのCMDBヘルスダッシュボードのスコアカードにこの情報が表示されますか？",
+    options: [
+      "完全性（Completeness）",
+      "正確さ（Correctness）",
+      "コンプライアンス（Compliance）",
+      "一貫性（Consistency）"
+    ],
+    answer: 1,
+    explanation: "古いCI（陳腐化したCI）の情報は「正確さ（Correctness）スコアカード」に表示されます。Correctnessスコアカードは陳腐化度・重複・CIライフサイクルの正確性を追跡します。"
+  },
+  // ===== Q11 CMDBワークスペース =====
+  {
+    category: "CMDBワークスペース",
+    text: "CMDB管理者は、CMDBワークスペース内で実行できるさまざまな操作についてチームに説明したいと考えています。CMDBワークスペースから開始できる操作はどれですか？（2つ正解）",
+    options: [
+      "重複するCIレコードを修正する、CMDBデータマネージャー認定ポリシーを作成する",
+      "ServiceNowの新しいCIクラスを作成する、Discovery設定を変更する",
+      "MID Serverの設定を変更する、インシデントフォームをカスタマイズする",
+      "サービスグラフコネクタをインストールする、ユーザー認証を設定する"
+    ],
+    answer: 0,
+    explanation: "CMDBワークスペースから開始できる操作は「重複するCIレコードの修正」と「CMDBデータマネージャー認定ポリシーの作成」です。CMDBワークスペースはCMDB管理の中心的なハブです。"
+  },
+  // ===== Q12 CMDBデータ基盤 =====
+  {
+    category: "CMDBデータ基盤",
+    text: "CMDBデータ基盤ダッシュボードを使用しているCMDB管理者が問題を発見し、プレイブックを実行したいと考えています。プレイブックにはどのような種類のドキュメントが含まれていると予想されますか？（2つ正解）",
+    options: [
+      "修復スクリプトとテスト手順",
+      "ベンダードキュメントとシステム仕様書",
+      "インシデント報告書と変更依頼書",
+      "問題分析と問題の概要"
+    ],
+    answer: 3,
+    explanation: "プレイブックには「問題分析」（問題の原因と背景を分析したドキュメント）と「問題の概要」（問題の概要を説明したドキュメント）が含まれます。これらにより管理者が問題を理解して解決できます。"
+  },
+  // ===== Q13 CMDB重複排除 =====
+  {
+    category: "CMDB重複排除",
+    text: "CMDB管理者は、CMDB内の重複データを削除するよう依頼されます。このタスクを管理する上で、最も望ましい方法は何ですか？",
+    options: [
+      "Discoveryスケジュールを再実行して最新データで上書きする",
+      "管理者が手動でCMDBレコードを比較して削除する",
+      "CMDBワークスペースの重複排除ダッシュボード",
+      "インポートセットを使用して重複レコードを識別し削除する"
+    ],
+    answer: 2,
+    explanation: "CMDB内の重複データを管理する最も望ましい方法は「CMDBワークスペースの重複排除ダッシュボード」を使用することです。これにより重複レコードを体系的に確認・マージ・削除できます。"
+  },
+  // ===== Q14 情報オブジェクト =====
+  {
+    category: "CMDBクラス",
+    text: "顧客は自社のビジネスアプリケーションをモデル化したいと考えており、個人識別情報（PII）データを含む様々な種類のデータを取得したいと考えています。これらの要件に基づいて、どのCMDBクラスを活用する必要がありますか？",
+    options: [
+      "アプリケーションサービス",
+      "情報オブジェクト",
+      "ビジネスサービス",
+      "ビジネスアプリケーション"
+    ],
+    answer: 1,
+    explanation: "PIIなどの機密データを含む情報を追跡するには「情報オブジェクト」クラスを使用します。情報オブジェクトはデータエンティティを表し、その分類・機密性・関連システムとの関係を管理できます。"
+  },
+  // ===== Q15 IntegrationHub ETL =====
+  {
+    category: "IntegrationHub ETL",
+    text: "ServiceNow IntegrationHub ETLの特徴または機能は何ですか？（2つ正解）",
+    options: [
+      "IREを使用してデータを処理・統合し、サードパーティデータをCMDBまたは非CMDBテーブルに統合する",
+      "MID Serverを通じてデータを送受信し、Transform Mapを使用してデータを変換する",
+      "Discovery Patternを使用してデータを検出し、Service Graphを通じてCMDBを更新する",
+      "REST APIでデータを取得し、スケジュールジョブでCMDBを定期更新する"
+    ],
+    answer: 0,
+    explanation: "IntegrationHub ETLはIREを使用してデータを処理・統合し、サードパーティのデータをCMDBまたは非CMDBテーブルに統合する機能を持ちます。これにより外部データソースとのシームレスな統合が可能になります。"
+  },
+  // ===== Q16 データマネージャー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "データセンターには多数のサーバーが存在する。CMDB管理者は、すべてのサーバーが存在することを確認したいと考えています。管理者はどのデータマネージャーポリシータイプを実装しますか？",
+    options: [
+      "退職（Retirement）",
+      "アーカイブ（Archive）",
+      "証明（Attestation）",
+      "調整（Reconciliation）"
+    ],
+    answer: 2,
+    explanation: "物理的な存在の確認には「証明（Attestation）」ポリシーを使用します。Attestationポリシーにより、担当者がCIの存在や正確性を確認・承認するタスクが生成されます。"
+  },
+  // ===== Q17 IRE =====
+  {
+    category: "IRE",
+    text: "識別および調整エンジン（IRE）で処理される際、WindowsサーバーはサーバーテーブルからWindowsサーバーテーブルに再分類されます。どのプロセスが起こったのか？",
+    options: [
+      "クラスマイグレーション",
+      "クラスアップグレード",
+      "CI再分類",
+      "テーブル継承"
+    ],
+    answer: 1,
+    explanation: "IRE処理時にCIがより具体的なサブクラスに移動する場合、これは「クラスアップグレード」と呼ばれます。cmdb_ci_serverからcmdb_ci_win_serverへの移動はクラスアップグレードの典型例です。"
+  },
+  // ===== Q18 データ更新ルール =====
+  {
+    category: "IRE",
+    text: "ある組織は複数のデータソースを利用しており、それぞれに優先度レベルが割り当てられています。優先度の高いデータソースは毎週更新しますが、統合上の問題で停止してしまいました。優先度の低いデータソースが一定期間の非アクティブ後にレコードを更新できるようにするには、どの構成を使用すればよいですか？",
+    options: [
+      "IRE調整ルール",
+      "優先度オーバーライドポリシー",
+      "データソースフォールバック設定",
+      "データ更新ルール"
+    ],
+    answer: 3,
+    explanation: "「データ更新ルール」を使用すると、高優先度のデータソースが一定期間非アクティブになった後、低優先度のデータソースがレコードを更新できるように設定できます。これはIREの多データソース調整機能の一部です。"
+  },
+  // ===== Q19 CSDMデータ基盤 =====
+  {
+    category: "CSDMデータ基盤",
+    text: "CSDMデータマネージャーは、製品モデル、拠点、事業部門がベストプラクティスに沿っているかどうかを示す指標を必要とします。CSDMデータ基盤ダッシュボードのどのタブにこの情報が表示されますか？",
+    options: [
+      "Foundation",
+      "Walk",
+      "Run",
+      "Crawl"
+    ],
+    answer: 0,
+    explanation: "製品モデル、拠点、事業部門などの基盤データに関する指標は「Foundation」タブに表示されます。Foundationタブは組織の基礎データの品質とベストプラクティスへの適合性を追跡します。"
+  },
+  // ===== Q20 CIライフサイクル =====
+  {
+    category: "CIライフサイクル",
+    text: "CMDB管理者は、過去1週間以内に発見されなかったすべての短命な構成アイテム（CI）が削除されていることを確認したいと考えています。CIレコードを廃止した後、CMDB管理者はどのような推奨される行動を取るべきでしょうか？",
+    options: [
+      "CIのライフサイクルステータスを「廃止」に手動設定する",
+      "CMDBヘルスダッシュボードでスコアカードを確認する",
+      "削除ポリシーを作成する",
+      "Discoveryのスケジュールを変更して短命なCIを除外する"
+    ],
+    answer: 2,
+    explanation: "CIを廃止（Retire）した後は、「削除ポリシーを作成する」ことが推奨されます。削除ポリシーにより、廃止されたCIが一定期間後に自動的にCMDBから削除されるようになります。"
+  },
+  // ===== Q21 CMDBガバナンス =====
+  {
+    category: "CMDBガバナンス",
+    text: "CMDB管理者は、所有者が設定されていないすべてのCMDBサービスを一覧表示するServiceNowレポートを持っており、ServiceNowプレイブックを使用したいと考えています。どのようなガバナンスプロセスを導入すれば、このような事態の再発を防ぐことができるでしょうか？",
+    options: [
+      "CMDBワークスペースのアラートを設定して通知する",
+      "「所有者」フィールドを必須にする",
+      "定期的なレポートを作成してCMDB管理者に送信する",
+      "プレイブックを使用して所有者を自動割り当てする"
+    ],
+    answer: 1,
+    explanation: "所有者が設定されないCMDBサービスの再発を防ぐには「所有者フィールドを必須にする」ことが最も効果的です。必須フィールドにすることで、サービスレコードの作成・更新時に所有者の入力が強制されます。"
+  },
+  // ===== Q22 CMDB 360 =====
+  {
+    category: "CMDB 360",
+    text: "構成管理チームは、CMDB 360 / Multisource CMDBのレポートに価値を見出しており、すべての構成アイテムデータにそれを利用したいと考えています。CMDB 360 / Multisource CMDBがデータに基づいてレポートや分析を行うためには、次のうちどれが真でなければなりませんか？",
+    options: [
+      "CIデータはIREを経由する必要がある",
+      "CMDBにMID Serverが接続されている必要がある",
+      "すべてのCIにServiceNowのタグが付与されている必要がある",
+      "Discovery Scheduleが毎日実行されている必要がある"
+    ],
+    answer: 0,
+    explanation: "CMDB 360 / Multisource CMDBが機能するためには、「CIデータがIREを経由する」必要があります。IREを経由することでデータソース情報が保持され、複数ソースからのCI属性を追跡・分析できます。"
+  },
+  // ===== Q23 データマネージャー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "既存のベースラインデータマネージャポリシーを使用する場合、構成アイテム（CI）がアーカイブまたは削除される前に満たすべき条件は何ですか？",
+    options: [
+      "90日以上Discoveryで未検出の状態が続いている",
+      "重複するCIレコードが存在し未処理のまま放置されている",
+      "インストール後一定期間が経過し使用率が基準値を下回っている",
+      "退役済みでライフサイクルの終末期（End of Life）にある"
+    ],
+    answer: 3,
+    explanation: "ベースラインのデータマネージャポリシーでは、CIが「退役済み（Retired）でライフサイクルの終末期（End of Life）にある」状態であることがアーカイブまたは削除の前提条件です。"
+  },
+  // ===== Q24 イベント管理 =====
+  {
+    category: "イベント管理",
+    text: "ServiceNowイベント管理は、適切に維持管理され必要なデータが適切に入力されたCMDBから大きな恩恵を受けます。イベント管理において、それがもたらす主な利点は何ですか？（2つ正解）",
+    options: [
+      "自動的にインシデントを解決する、変更要求を自動生成する",
+      "リアルタイムでCIを更新する、パフォーマンス閾値を設定する",
+      "アラートを特定のCIに紐付ける、マッピングされたサービスによるビジネス影響の可視化",
+      "ネットワークトポロジーを自動生成する、セキュリティポリシーを適用する"
+    ],
+    answer: 2,
+    explanation: "CMDBを活用したイベント管理の主な利点は「アラートを特定のCIに紐付けること」と「マッピングされたサービスによるアラートのビジネス影響の可視化」です。これにより障害の影響範囲を迅速に特定できます。"
+  },
+  // ===== Q25 CIクラス =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者は、ServiceNowでIoTセンサー用の新しいCIクラスを作成する必要があります。この特定の作業に関して推奨される手順は何ですか？（2つ正解）",
+    options: [
+      "新しいCMDBテーブルをゼロから作成し、ServiceNow Storeからプラグインをインストールする",
+      "適切な親クラスの下に新しいクラスを追加する、CMDB CIクラスモデルストアアプリをインストール・更新してクラスが既に存在しないことを確認する",
+      "cmdb_ci_hardwareクラスのコピーを作成し、既存のDiscoveryパターンを更新する",
+      "ServiceNowサポートに連絡して新しいクラスを要求し、承認後CMDBに追加する"
+    ],
+    answer: 1,
+    explanation: "新しいCIクラスを作成するための推奨手順は、①CMDB CIクラスモデルストアアプリをインストール・更新してクラスが既に存在しないことを確認し、②適切な親クラスの下に新しいクラスを追加することです。"
+  },
+  // ===== Q26 CIクラス =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者はCMDBの管理を担当しており、新しいタイプの機器を追跡するために、新しいCIクラスを定義する必要があります。新しいCIクラスを追加し、既存のCMDB構造と適切に統合されるようにするには、どの操作が必要ですか？",
+    options: [
+      "CIクラスマネージャで新しいCIクラスを直接作成し、関連する親クラスから継承するようにテーブルの継承を設定する",
+      "Discoveryパターンを更新して新しいデバイスタイプを検出できるようにする",
+      "ServiceNow Storeから新しいCIクラスパッケージをインストールする",
+      "データベーステーブルを手動で作成してCMDB構造に追加する"
+    ],
+    answer: 0,
+    explanation: "新しいCIクラスを既存のCMDB構造に適切に統合するには、「CIクラスマネージャで直接新しいCIクラスを作成し、関連する親クラスからテーブル継承するよう設定する」ことが必要です。"
+  },
+  // ===== Q27 CMDBテーブル命名 =====
+  {
+    category: "CMDBクラス",
+    text: "ServiceNow管理者はCMDBに複数の新しいクラスを作成する必要があるが、CMDBテーブルの命名に関するServiceNowのベストプラクティスに従いたいと考えています。すべてのカスタムCMDBテーブルの開始プレフィックスは何ですか？",
+    options: [
+      "x_cmdb_ci",
+      "cmdb_ci_custom",
+      "u_cmdb_ci",
+      "sn_cmdb_ci"
+    ],
+    answer: 2,
+    explanation: "ServiceNowのベストプラクティスでは、カスタムCMDBテーブルは「u_cmdb_ci」プレフィックスで開始することが推奨されています。「u_」はカスタム（User-defined）テーブルを示す命名規則です。"
+  },
+  // ===== Q28 統合マップ =====
+  {
+    category: "統合マップ",
+    text: "CMDB管理者が統合マップとサービスマッピングマップを比較しています。統合マップのその他の機能は何ですか？（2つ正解）",
+    options: [
+      "マップは自動的に更新され変更をリアルタイムで反映する、関連インシデントが自動表示される",
+      "マップノードはユーザーの好みに基づいてフィルタリングできる、マップに表示されるレベル数は変更できる",
+      "マップからCIを直接編集できる、マップをPDF形式でエクスポートできる",
+      "マップを他のユーザーと共有できる、マップにカスタム注釈を追加できる"
+    ],
+    answer: 1,
+    explanation: "統合マップの追加機能として、「マップノードをユーザーの好みに基づいてフィルタリングできる」ことと「マップに表示されるレベル数を変更できる」ことが挙げられます。"
+  },
+  // ===== Q29 データマネージャー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "CMDBデータマネージャーは、ServiceNowプラットフォームにアクセスして、CIライフサイクル操作を自動化および統制するポリシーを作成・公開・管理し、CMDBの健全性と効率性を維持する必要があります。データマネージャーはどこでこれを行うことができますか？",
+    options: [
+      "CI識別子モジュール",
+      "System Administration モジュール",
+      "Discovery設定ページ",
+      "CMDBワークスペース管理タブ"
+    ],
+    answer: 3,
+    explanation: "CMDBデータマネージャーは「CMDBワークスペースの管理タブ」でCIライフサイクル操作を自動化するポリシーを作成・公開・管理できます。管理タブはCMDBガバナンスの中心的な場所です。"
+  },
+  // ===== Q30 変更管理 =====
+  {
+    category: "変更管理",
+    text: "構成管理チームは、健全で信頼性の高いCMDBの構築に成功しました。検出されたインフラストラクチャデータを統合し、検出不可能なデータを正確に参照し、サービスマッピングを使用してCMDBをサービス対応にしました。これらの改善は変更管理プロセスをどのように強化するでしょうか？（2つ正解）",
+    options: [
+      "割り当てグループフィールドの自動入力を有効にして変更を動的にルーティングする、変更がもたらす潜在的な影響についての洞察を提供する",
+      "変更承認プロセスを自動化する、変更の実施コストを自動計算する",
+      "変更スケジュールを自動生成する、変更後のテスト手順を自動作成する",
+      "変更要求をシステムに自動送信する、変更完了後に自動通知する"
+    ],
+    answer: 0,
+    explanation: "CMDBの改善による変更管理強化の効果は「割り当てグループフィールドの自動入力による変更の動的ルーティング」と「変更がもたらす潜在的な影響についての洞察の提供」です。"
+  },
+  // ===== Q31 CMDB健全性 =====
+  {
+    category: "CMDB健全性",
+    text: "CMDB管理者は、どの構成アイテム（CI）およびCIクラスに重要なデータが欠落しているかを追跡する必要があります。この要件の追跡をサポートするCMDBヘルスダッシュボードのスコアカードはどれですか？",
+    options: [
+      "正確さ（Correctness）",
+      "コンプライアンス（Compliance）",
+      "完全（Completeness）",
+      "一貫性（Consistency）"
+    ],
+    answer: 2,
+    explanation: "重要なデータが欠落しているCIの追跡には「完全（Completeness）スコアカード」を使用します。Completenessスコアカードは必須フィールドやキー属性が入力されているかどうかを追跡します。"
+  },
+  // ===== Q32 CIクラスマネージャー =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者は、管理対象クラスに属する関連性の高い構成アイテムのみが、インシデント・問題・変更レコードに表示されるようにしたいと考えています。CMDB管理者が要求された結果を得るためには、CIクラスマネージャーでどのチェックボックスをオンにする必要がありますか？",
+    options: [
+      "管理クラス（Managed Class）",
+      "プリンシパルクラス",
+      "可視クラス（Visible Class）",
+      "インスタンスクラス（Instance Class）"
+    ],
+    answer: 1,
+    explanation: "インシデント・問題・変更レコードに表示されるCIクラスを制限するには、CIクラスマネージャーで「プリンシパルクラス」チェックボックスをオンにします。プリンシパルクラスとして設定されたクラスのCIのみが参照フィールドに表示されます。"
+  },
+  // ===== Q33 グループ管理 =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者は、特定のクラスについてCIクラスマネージャーとテクニカルサービスオファリングの両方からグループデータを管理します。CIクラスマネージャー：グループ管理 = エンタープライズITサービス。技術サービス内容：管理グループ = Windows サポート、変更グループ = 変更管理チーム。設定された値に基づくと、このクラスのCIの管理対象グループは何になりますか？",
+    options: [
+      "Windowsサポート",
+      "エンタープライズITサービス",
+      "変更管理チーム",
+      "グローバルITサービス"
+    ],
+    answer: 0,
+    explanation: "テクニカルサービスオファリングで設定された「管理グループ = Windows サポート」が優先されます。テクニカルサービスオファリングの設定はCIクラスマネージャーの設定より具体的であるため、「Windowsサポート」が管理対象グループになります。"
+  },
+  // ===== Q34 資産管理 =====
+  {
+    category: "資産管理",
+    text: "資産管理者は、資産記録と構成アイテム記録が自動的に同期されるようにしたいと考えています。マネージャーはどのようにしてこれを実現するのでしょうか？（2つ正解）",
+    options: [
+      "資産管理モジュールでCIリンクを手動設定する、Discovery Scheduleを毎日実行する",
+      "IntegrationHub ETLを使用して資産とCIを同期する、MID Serverで資産データを収集する",
+      "CMDBデータマネージャーポリシーで資産同期ルールを設定する、インポートセットで資産データをインポートする",
+      "CIテーブルの変更時に資産フィールドを更新するビジネスルールが有効、資産テーブルの変更時にCIフィールドを更新するビジネスルールが有効"
+    ],
+    answer: 3,
+    explanation: "資産記録とCI記録の自動同期を実現するには、「CIテーブルの変更時に資産フィールドを更新するビジネスルール」と「資産テーブルの変更時にCIフィールドを更新するビジネスルール」の両方が有効になっている必要があります。"
+  },
+  // ===== Q35 CMDB役割 =====
+  {
+    category: "CMDB役割",
+    text: "CMDBの実装において、チームメンバーの1人がCIデータの正確性と完全性を確保する役割を担います。このメンバーは、データ品質の維持と不一致の解消も担当します。これらのタスクを担当するのはどの役割でしょうか？",
+    options: [
+      "CMDBアーキテクト",
+      "データスチュワード",
+      "構成マネージャー",
+      "ITサービスマネージャー"
+    ],
+    answer: 2,
+    explanation: "CIデータの正確性・完全性の確保、データ品質の維持、不一致の解消は「構成マネージャー」の役割です。構成マネージャーはCMDBデータの品質管理全般を担当します。"
+  },
+  // ===== Q36 プレイブック =====
+  {
+    category: "CMDBデータ基盤",
+    text: "CMDB管理者がServiceNowインスタンスの管理を引き継ぎ、CMDBに複数の不備があることを確認しました。CMDBデータ基盤ダッシュボードを確認したところ、ServiceNowが修復プレイブックを提供していることがわかりました。プレイブックは、管理者がこれらの問題を解決する上でどのように役立つのでしょうか？",
+    options: [
+      "プレイブックは、CMDBの設定変更を自動的に適用します",
+      "プレイブックは、問題の分析と解決に役立ちます",
+      "プレイブックは、Discovery Patternを更新するためのガイドラインを提供します",
+      "プレイブックは、新しいCIクラスを自動生成します"
+    ],
+    answer: 1,
+    explanation: "修復プレイブックは「問題の分析と解決に役立ちます」。プレイブックには問題の分析方法と解決手順が記載されており、管理者がCMDBの問題を体系的に理解・解決できるようにします。"
+  },
+  // ===== Q37 CMDB 360 =====
+  {
+    category: "CMDB 360",
+    text: "構成管理チームは、CMDB 360/マルチソースCMDBの機能を活用することを決定しました。どのシステムプロパティを有効にする必要がありますか？",
+    options: [
+      "glide.identification_engine.multisource_enabled",
+      "glide.cmdb.multisource.enabled",
+      "glide.ire.multisource_cmdb_enabled",
+      "glide.cmdb360.enabled"
+    ],
+    answer: 0,
+    explanation: "CMDB 360/マルチソースCMDBを有効にするには、システムプロパティ「glide.identification_engine.multisource_enabled」をtrueに設定する必要があります。"
+  },
+  // ===== Q38 IRE =====
+  {
+    category: "IRE",
+    text: "CMDB管理者は、CMDBのIREルールを設定したいと考えています。CMDB管理者はCIクラスマネージャを開き、CIクラスの下にある「健全性包含ルール」タブを確認します。これらの規則はIREによってどのように活用されているのでしょうか？",
+    options: [
+      "CIのヘルススコアを計算して管理者に通知する",
+      "IRE処理後のCIを自動的にアーカイブする",
+      "重複するCIを自動的にマージする",
+      "識別プロセスに含まれるCIの範囲を絞り込む"
+    ],
+    answer: 3,
+    explanation: "「健全性包含ルール」はIREによって「識別プロセスに含まれるCIの範囲を絞り込む」ために活用されます。これにより、どのCIをIREの識別・調整プロセスの対象とするかを制御できます。"
+  },
+  // ===== Q39 グループ同期 =====
+  {
+    category: "CIクラス管理",
+    text: "構成マネージャーは、構成アイテムの手動で管理されているデータ属性を管理したいと考えています。テクノロジー管理オファリングと動的CIグループを使用してCI上で自動的に同期されるグループ値はどれですか？（2つ正解）",
+    options: [
+      "管理グループとインシデントグループ",
+      "承認グループとデプロイグループ",
+      "サポートグループと変更グループ",
+      "セキュリティグループとコンプライアンスグループ"
+    ],
+    answer: 2,
+    explanation: "テクノロジー管理オファリングと動的CIグループを使用してCI上で自動的に同期されるグループ値は「サポートグループ」と「変更グループ」です。これらはCIのサービス管理情報として自動的に設定されます。"
+  },
+  // ===== Q40 サービスグラフコネクタ =====
+  {
+    category: "サービスグラフコネクタ",
+    text: "CMDB管理者がSCCMサービスグラフコネクタのクエリを変更します。この変更による影響は何ですか？",
+    options: [
+      "SCCMサービスグラフコネクタのスケジュール済みジョブはすべて構成する必要があります",
+      "変更されたクエリはすぐに反映され、影響は最小限です",
+      "SCCMからのデータインポートが一時的に停止します",
+      "CMDBの既存のSCCMデータがすべて削除されます"
+    ],
+    answer: 0,
+    explanation: "SCCMサービスグラフコネクタのクエリを変更すると、「スケジュール済みジョブはすべて再構成する必要があります」。クエリの変更はスケジュールジョブのデータ収集方法に影響するため、関連するすべてのスケジュールジョブを見直す必要があります。"
+  },
+  // ===== Q41 CMDBリレーションシップ =====
+  {
+    category: "CMDBリレーションシップ",
+    text: "アプリケーションとサーバーの関係は何ですか？",
+    options: [
+      "Application > Runs on::Runs > Server",
+      "Application > Hosted on::Hosts > Server",
+      "Application > Connected to::Connects > Server",
+      "Application > Depends on::Used by > Server"
+    ],
+    answer: 0,
+    explanation: "アプリケーションとサーバーの標準的なCMDBリレーションシップは「Application > Runs on::Runs > Server」です。これはServiceNowのCMDBで定義された標準的な関係タイプです。"
+  },
+  // ===== Q42 自動リレーション =====
+  {
+    category: "CMDBリレーションシップ",
+    text: "自動的にリレーションシップを作成するServiceNowソリューションはどれですか？（2つ正解）",
+    options: [
+      "IntegrationHub ETLとインポートセット",
+      "CMDBデータマネージャーとCI識別子",
+      "MID Serverと変換マップ",
+      "DiscoveryとService Mapping"
+    ],
+    answer: 3,
+    explanation: "「Discovery」と「Service Mapping」は、ネットワーク上のデバイスとサービスを検出し、CI間のリレーションシップを自動的に作成するServiceNowソリューションです。"
+  },
+  // ===== Q43 データ取り込み =====
+  {
+    category: "データ統合",
+    text: "CMDB管理者は、Microsoft SCCMから関連データをCMDBに取り込む必要があります。どのデータ取り込み方法が最も早く価値を生み出しますか？",
+    options: [
+      "インポートセットと変換マップ",
+      "REST APIを使用したカスタム統合",
+      "サービスグラフコネクタ",
+      "MID ServerによるDiscovery"
+    ],
+    answer: 2,
+    explanation: "Microsoft SCCMからのデータ取り込みで最も早く価値を生み出す方法は「サービスグラフコネクタ」です。SCCMサービスグラフコネクタはすぐに使えるソリューションで、カスタム開発不要で迅速に価値を提供します。"
+  },
+  // ===== Q44 陳腐化度 =====
+  {
+    category: "CMDB健全性",
+    text: "CMDB管理者は、CMDB健全性ダッシュボードの「正確性スコアカード」にある「陳腐化度」指標を活用したいと考えています。この指標の期間を計算するために使用されるフィールドはどれですか？",
+    options: [
+      "作成されました（sys_created_on）",
+      "更新されました（sys_updated_on）",
+      "最終Discovery日時（last_discovered）",
+      "最終監査日時（last_audit_on）"
+    ],
+    answer: 1,
+    explanation: "「陳腐化度」指標の期間計算には「更新されました（sys_updated_on）」フィールドが使用されます。このフィールドの値から現在日時までの日数が陳腐化度の判定基準になります。"
+  },
+  // ===== Q45 識別ルール =====
+  {
+    category: "IRE",
+    text: "構成マネージャーがCMDB内のCIクラスを管理しています。識別ルールを更新する必要があります。構成マネージャーは、クラスの既存の識別ルールをどこで表示および構成できますか？（2つ正解）",
+    options: [
+      "CI識別子モジュールとCIクラスマネージャー",
+      "CMDBワークスペースとDiscovery設定",
+      "IRE管理コンソールとMID Serverダッシュボード",
+      "System Definitionとインポートセット管理"
+    ],
+    answer: 0,
+    explanation: "識別ルールは「CI識別子モジュール」と「CIクラスマネージャー」の両方で表示・構成できます。CI識別子モジュールでは詳細なルール設定が、CIクラスマネージャーではクラスに関連付けられたルールの確認ができます。"
+  },
+  // ===== Q46 セキュリティ運用 =====
+  {
+    category: "セキュリティ運用",
+    text: "セキュリティ運用においてCMDBを使用するメリットは何ですか？（2つ正解）",
+    options: [
+      "セキュリティポリシーを自動適用する、ユーザーアクセスログを記録する",
+      "ファイアウォールルールを自動生成する、パスワードポリシーを管理する",
+      "セキュリティチームがインシデントを評価・対処できる、脆弱性のあるITインフラストラクチャを特定する",
+      "マルウェアスキャンを自動実行する、不正アクセスを自動ブロックする"
+    ],
+    answer: 2,
+    explanation: "セキュリティ運用でのCMDB使用メリットは「セキュリティチームがインシデントを評価し対処できること」と「脆弱性のあるITインフラストラクチャを特定できること」です。CMDBのCI情報が脆弱性管理を支援します。"
+  },
+  // ===== Q47 検出不可能な属性 =====
+  {
+    category: "データ統合",
+    text: "組織は、ハードウェア構成アイテム（CI）の保証期限日など、検出不可能な属性を維持する必要があります。これらの属性は、自動検出ツールでは更新されません。すべてのCIについてこれらの属性が正確に維持されることを保証する方法はありますか？",
+    options: [
+      "スケジュールされたデータインポートを使用して、外部ソースから属性を更新する",
+      "CMDBデータマネージャーの認証ポリシーを使用して管理者に確認させる",
+      "ServiceNowのDiscovery機能を拡張して保証期限日を検出する",
+      "IT資産管理チームが手動でCMDBを定期的に更新する"
+    ],
+    answer: 0,
+    explanation: "保証期限日などの検出不可能な属性を維持するには「スケジュールされたデータインポートを使用して外部ソースから属性を更新する」方法が推奨されます。外部の資産管理システムから定期的にデータをインポートします。"
+  },
+  // ===== Q48 CSDM Walk =====
+  {
+    category: "CSDM",
+    text: "サービスポートフォリオマネージャーは、自社のビジネスサービスがどのアプリケーションサービスに依存しているかを知りたいと考えています。CSDMのどの段階でこの関係性をマッピングすればよいでしょうか？",
+    options: [
+      "Crawl",
+      "Foundation",
+      "Run",
+      "Walk"
+    ],
+    answer: 3,
+    explanation: "ビジネスサービスとアプリケーションサービスの依存関係をマッピングするのはCSDMの「Walk」段階です。Walk段階ではビジネスサービスとテクノロジーサービスの関係性を定義します。"
+  },
+  // ===== Q49 CMDBデータ基盤 =====
+  {
+    category: "CMDBデータ基盤",
+    text: "CMDB管理者は、ServiceNowの推奨プラクティスに従ってCMDBがどのように構成されているかを把握する必要があります。どの方法を使用すべきでしょうか？",
+    options: [
+      "CMDBデータ基盤ダッシュボード",
+      "CMDB健全性ダッシュボード",
+      "CI識別子モジュール",
+      "ServiceNow公式ドキュメント"
+    ],
+    answer: 0,
+    explanation: "ServiceNowの推奨プラクティスに従ったCMDBの構成状況を把握するには「CMDBデータ基盤ダッシュボード」を使用します。このダッシュボードはCMDBがベストプラクティスにどれだけ適合しているかを示します。"
+  },
+  // ===== Q50 CIクラスマネージャー =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者は、関係者向けに技術文書を作成しています。この文書には、属性のリスト、IRE ルール、複数のクラスに対する推奨される関係性などが含まれます。CMDB管理者はこの情報を収集するためにどの中心的な場所を使用しますか？",
+    options: [
+      "CMDBワークスペース",
+      "CMDB健全性ダッシュボード",
+      "CIクラスマネージャー",
+      "CI識別子モジュール"
+    ],
+    answer: 2,
+    explanation: "属性リスト・IREルール・クラス間の関係性など、CIクラスに関する技術情報を収集する中心的な場所は「CIクラスマネージャー」です。CIクラスマネージャーはクラスに関するすべての情報の一元管理場所です。"
+  },
+  // ===== Q51 クエリビルダー =====
+  {
+    category: "CMDBクエリビルダー",
+    text: "CMDB管理者は、CMDBクエリビルダーを使用して、特定のアプリケーションサービスに属するすべての運用中の構成アイテムを表示するクエリを作成するよう求められます。どの手順を踏めば望ましい結果が得られますか？",
+    options: [
+      "1.フィルタを定義、2.CIクラスをキャンバスに追加、3.クエリを実行、4.結果をエクスポートする",
+      "1.アプリケーションサービスクラスとCIクラスをキャンバスに追加、2.クラス間の関係を設定、3.フィルタを定義、4.クエリを実行する",
+      "1.クエリを定義、2.CIクラスを選択、3.関係を設定、4.アプリサービスをキャンバスに追加する",
+      "1.CIクラスをキャンバスに追加、2.クエリを実行、3.クラス間の関係を設定、4.フィルタを定義する"
+    ],
+    answer: 1,
+    explanation: "CMDBクエリビルダーの正しい手順は「①アプリケーションサービスクラスとCIクラスをキャンバスに追加 → ②クラス間の関係を設定 → ③フィルタを定義 → ④クエリを実行」です。"
+  },
+  // ===== Q52 情報オブジェクト =====
+  {
+    category: "情報オブジェクト",
+    text: "医療機関は、特定のデータ（例えば、規制対象の患者情報）と、それが業務アプリケーションとどのように関連しているかを追跡する必要があります。CSDMはこの目標を達成するためにどのような行動を推奨していますか？",
+    options: [
+      "患者情報を表す情報オブジェクトを作成し、アプリケーション所有者と相談の上、リレーションシップを介してビジネスアプリケーションにリンクする",
+      "患者情報をCMDB_CI_Databaseクラスとして登録し、アクセス制御を設定する",
+      "規制対象データのカスタムCIクラスを作成し、セキュリティポリシーを適用する",
+      "患者情報をCSDMのFoundationデータとして登録し、ビジネスサービスに関連付ける"
+    ],
+    answer: 0,
+    explanation: "CSDMでは「患者情報を表す情報オブジェクトを作成し、リレーションシップを介してビジネスアプリケーションにリンクする」ことを推奨します。情報オブジェクトはデータエンティティとその関係性を管理するためのCSDMのコンセプトです。"
+  },
+  // ===== Q53 統合マップ =====
+  {
+    category: "統合マップ",
+    text: "サービスデスクマネージャーは、統合マップを活用して、選択した構成アイテム（CI）に関連するアクティブなインシデントや問題を検索したいと考えています。マネージャーに可視性と詳細情報を提供するパネルはどれですか？",
+    options: [
+      "Impact Map",
+      "Incident View",
+      "Service Dependency",
+      "Related Item"
+    ],
+    answer: 3,
+    explanation: "統合マップで選択したCIに関連するアクティブなインシデントや問題を確認するには「Related Item」パネルを使用します。このパネルにより選択したCIに関連するすべてのレコードの詳細が表示されます。"
+  },
+  // ===== Q54 インポートセット =====
+  {
+    category: "データ統合",
+    text: "インポートセットと変換マップを使用してCMDBにデータを統合する場合、データがIREを通じて処理されるようにするために、どのタイプのスクリプトを追加しますか？",
+    options: [
+      "On After",
+      "On Complete",
+      "On Before",
+      "Transform Script"
+    ],
+    answer: 2,
+    explanation: "インポートセットと変換マップでデータをIREを通じて処理するには「On Before」スクリプトを追加します。On Beforeスクリプトは変換処理の前に実行され、IREへのデータルーティングを設定します。"
+  },
+  // ===== Q55 CMDBガバナンス =====
+  {
+    category: "CMDBガバナンス",
+    text: "CMDBガバナンスの柱に含まれるCMDB管理ツールと機能は、組織が構成アイテム（CI）を管理し、サービス提供を改善する上でどのように役立ちますか？（2つ正解）",
+    options: [
+      "コスト削減と自動化の推進、ベンダー管理の効率化",
+      "可視性と制御性を向上させる、強化されたサービス管理業務",
+      "セキュリティポリシーの強制適用、コンプライアンスレポートの自動生成",
+      "ユーザートレーニングの効率化、ITオペレーションの標準化"
+    ],
+    answer: 1,
+    explanation: "CMDBガバナンスの柱に含まれるCMDB管理ツールと機能の利点は「可視性と制御性の向上」と「強化されたサービス管理業務」です。これらによりIT環境の可視性が高まり、サービス管理が改善されます。"
+  },
+  // ===== Q56 データマネージャー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "CMDB管理者はCMDBへのデータ入力作業を開始しており、もはや有用または適用されなくなったデータがすべて削除されていることを確認する必要があります。これを実現するには、どのガバナンス管理ツールが適しているでしょうか？",
+    options: [
+      "CMDBデータマネージャー",
+      "CMDBワークスペース",
+      "CI識別子モジュール",
+      "Discovery Administration"
+    ],
+    answer: 0,
+    explanation: "不要になったCMDBデータの削除を管理するには「CMDBデータマネージャー」が適しています。データマネージャーでは退職・アーカイブ・削除ポリシーを設定して、不要なデータを体系的に管理できます。"
+  },
+  // ===== Q57 CIクラスマネージャー健康設定 =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者グループは、CMDBに保存されている運用中のLinuxサーバーについて、「サポートグループ」または「管理グループ」のフィールドが入力されていない場合に、タスク通知を受け取るためのプロセスを確立することを目的としています。CMDB内のLinuxサーバーで推奨フィールドが欠落している場合に、推奨フィールドを設定したり、タスクレコードを生成したりするために活用できるServiceNowモジュールはどれですか？",
+    options: [
+      "CMDBデータマネージャーと認証ポリシー",
+      "CMDBワークスペースと重複排除ダッシュボード",
+      "Discovery設定とMID Serverコンソール",
+      "CIクラスマネージャーと健康設定"
+    ],
+    answer: 3,
+    explanation: "推奨フィールドが欠落している場合にタスクレコードを生成するには「CIクラスマネージャー」と「健康設定（Health Configuration）」を活用します。健康設定でフィールドを必須または推奨として定義し、欠落時のアクションを設定できます。"
+  },
+  // ===== Q58 IntegrationHub ETL =====
+  {
+    category: "IntegrationHub ETL",
+    text: "CMDB管理者は、サービスグラフコネクタを使用して、サードパーティソースからServiceNow CMDBにデータをインポートしました。管理者は、インポートされたデータにおける特定のフィールド間のマッピングを確認したいと考えています。どの機能でその情報が表示されますか？",
+    options: [
+      "Transform Map Viewer",
+      "Data Source Analyzer",
+      "IntegrationHub ETL",
+      "CMDB 360 Mapper"
+    ],
+    answer: 2,
+    explanation: "インポートされたデータのフィールド間マッピングを確認するには「IntegrationHub ETL」を使用します。IntegrationHub ETLはサービスグラフコネクタのデータ変換ルールとフィールドマッピングを表示・管理します。"
+  },
+  // ===== Q59 CMDB 360 =====
+  {
+    category: "CMDB 360",
+    text: "CMDB 360 / Multisource CMDB の保存済みクエリは、CMDBワークスペースのどこで表示および作成できますか？",
+    options: [
+      "CMDBワークスペースの管理タブ",
+      "CMDB 360タブの保存済みクエリウィンドウ",
+      "CI識別子モジュールのクエリビルダー",
+      "CMDBクエリビルダーのスナップショット機能"
+    ],
+    answer: 1,
+    explanation: "CMDB 360 / Multisource CMDBの保存済みクエリは「CMDB 360タブの保存済みクエリウィンドウ」で表示・作成できます。このウィンドウからよく使用するクエリを保存・再利用できます。"
+  },
+  // ===== Q60 プリンシパルクラス =====
+  {
+    category: "CIクラス管理",
+    text: "構成マネージャーは、インシデントフォームの構成アイテム参照フィールドで使用可能なクラスの数を制限する必要があります。マネージャーはどのようにして主要クラスを設定するのですか？",
+    options: [
+      "CIクラスマネージャーの基本情報タブにある「主クラス」チェックボックスを使用して、クラスを設定する",
+      "インシデントフォームのUIポリシーでCI参照フィールドをカスタマイズする",
+      "CMDBデータマネージャーでCIの可視性ポリシーを設定する",
+      "System Definitionでインシデントテーブルのフィールド設定を変更する"
+    ],
+    answer: 0,
+    explanation: "インシデントフォームのCI参照フィールドで使用可能なクラスを制限するには「CIクラスマネージャーの基本情報タブにある『主クラス』チェックボックス」を使用します。このチェックボックスをオンにしたクラスのみが参照フィールドに表示されます。"
+  },
+  // ===== Q61 CMDB 360 =====
+  {
+    category: "CMDB 360",
+    text: "CMDBマネージャーは、CMDB 360/Multisource CMDBを使用してCMDBの品質を維持および向上させます。マネージャーはなぜCMDB 360/マルチソースCMDBを使用するのでしょうか？",
+    options: [
+      "CMDBのデータを単一のデータソースに統合する",
+      "CMDBの重複データを自動削除する",
+      "CIのライフサイクルを自動管理する",
+      "複数のデータソースからCI属性を特定する"
+    ],
+    answer: 3,
+    explanation: "CMDB 360/マルチソースCMDBを使用する理由は「複数のデータソースからCI属性を特定する」ためです。複数のソースからのCI属性を統合・比較することで、データの正確性と完全性を向上させます。"
+  },
+  // ===== Q62 NLQ =====
+  {
+    category: "CMDBワークスペース",
+    text: "管理者はどこで自然言語クエリ（NLQ）を実行できますか？",
+    options: [
+      "CI識別子モジュール",
+      "CMDBクエリビルダー",
+      "CMDBワークスペース",
+      "Discovery設定コンソール"
+    ],
+    answer: 2,
+    explanation: "自然言語クエリ（NLQ）は「CMDBワークスペース」で実行できます。CMDBワークスペースのNLQ機能により、技術的なクエリ構文を知らなくても日本語などの自然言語でCMDBを検索できます。"
+  },
+  // ===== Q63 プリンシパルクラス設定 =====
+  {
+    category: "CIクラス管理",
+    text: "CMDB管理者は、CIクラスをプリンシパルクラスとして設定する必要があります。どのCIクラスマネージャーのタブにアクセスする必要がありますか？",
+    options: [
+      "グループ管理 > 設定",
+      "クラス情報 > 基本情報",
+      "健全性設定 > 包含ルール",
+      "クラス情報 > 識別ルール"
+    ],
+    answer: 1,
+    explanation: "CIクラスをプリンシパルクラスとして設定するには、CIクラスマネージャーの「クラス情報 > 基本情報」タブにアクセスし、プリンシパルクラスのチェックボックスを有効にします。"
+  },
+  // ===== Q64 ライフサイクルマッピング =====
+  {
+    category: "CSDM",
+    text: "構成管理ガバナンスチームは、従来のCMDBステータスフィールドの利用からCSDMライフサイクルステータスフィールドへの移行を進めています。どのテーブルを変更できますか？",
+    options: [
+      "ライフサイクルマッピング [life_cycle_mapping]",
+      "CMDBステータス設定 [cmdb_status_config]",
+      "CIライフサイクル [cmdb_ci_lifecycle]",
+      "CSDMライフサイクル [csdm_lifecycle]"
+    ],
+    answer: 0,
+    explanation: "CMDBステータスフィールドからCSDMライフサイクルステータスフィールドへの移行で変更できるテーブルは「ライフサイクルマッピング [life_cycle_mapping]」です。このテーブルでステータス値のマッピングを定義します。"
+  },
+  // ===== Q65 資産CIフィールドマッピング =====
+  {
+    category: "資産管理",
+    text: "ユーザーのエンドポイントデバイスはCMDBにインポートされ、コンピュータCIの「担当者」フィールドに情報が入力されます。資産管理チームは、関連する資産の「担当者」フィールドに情報を入力するよう構成アナリストに依頼します。構成アナリストは、これを自動化された方法で実現するためにどのような行動をとるのでしょうか？",
+    options: [
+      "ビジネスルールを作成して、CIの「担当者」フィールドが変更されたときに資産の「担当者」フィールドを自動更新する",
+      "CMDBデータマネージャーでフィールド同期ポリシーを作成して、CIと資産間のデータを自動同期する",
+      "WorkflowアクティビティでCIと資産の「担当者」フィールドを同期するタスクを設定する",
+      "アセット-CIフィールドマッピングモジュールを使用して、アセットと関連付けられたCIの間で「割り当て先」値を複製する新しいルールを作成する"
+    ],
+    answer: 3,
+    explanation: "CIと資産間で「担当者」フィールドを自動同期するには「アセット-CIフィールドマッピングモジュール」を使用して「割り当て先」値を複製する新しいルールを作成します。このモジュールはCI-資産間のフィールド同期を専門的に管理します。"
+  },
+  // ===== Q66 証明ポリシー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "構成管理チームは、CMDBに登録されているすべてのサーバーが実際にデータセンター内に存在することを確認したいと考えています。チームはどのタイプのCMDBデータマネージャーポリシーを作成しますか？",
+    options: [
+      "退職（Retirement）",
+      "アーカイブ（Archive）",
+      "証明（Attestation）",
+      "バリデーション（Validation）"
+    ],
+    answer: 2,
+    explanation: "物理的な存在の確認には「証明（Attestation）」ポリシーを作成します。Attestationポリシーにより担当者がCIの物理的存在を確認・証明するタスクが自動生成されます。"
+  },
+  // ===== Q67 重複排除テンプレート =====
+  {
+    category: "CMDB重複排除",
+    text: "CMDB管理者は、まとめて修正する必要のある、類似した重複排除タスクを多数抱えています。管理者はどのようにしてこれを実現するのでしょうか？",
+    options: [
+      "CMDBクエリビルダーでまとめてタスクを修正する",
+      "重複排除テンプレートを作成して実行する",
+      "一括更新ウィンドウを使用してレコードをまとめて修正する",
+      "スクリプトジョブを作成して重複タスクを一括処理する"
+    ],
+    answer: 1,
+    explanation: "類似した複数の重複排除タスクをまとめて修正するには「重複排除テンプレートを作成して実行する」方法を使用します。テンプレートを使うことで同じパターンの重複を効率的に一括処理できます。"
+  },
+  // ===== Q68 変更グループ自動入力 =====
+  {
+    category: "変更管理",
+    text: "構成管理チームは、健全で信頼性の高いCMDBの構築に成功しました。変更要求フォームのどのフィールドが、適切な変更グループを参照する構成アイテム（CI）を選択した後に自動的に入力されますか？",
+    options: [
+      "配属グループ",
+      "承認グループ",
+      "サポートグループ",
+      "変更実装チーム"
+    ],
+    answer: 0,
+    explanation: "変更要求フォームでCIを選択した後に自動的に入力されるのは「配属グループ」フィールドです。CMDBでCIに設定された変更グループが変更要求の配属グループとして自動的にセットされます。"
+  },
+  // ===== Q69 場所の問題 =====
+  {
+    category: "CMDBデータ基盤",
+    text: "CMDB管理者がCMDBデータ基盤ダッシュボードを表示したところ、一意の場所の結果の割合が低いことに気づきました。この問題を修正するために、関連するプレイブックに記載されている推奨手順は何ですか？",
+    options: [
+      "場所フィールドを必須にして、すべてのCIに場所を割り当てる",
+      "CMDBデータマネージャーで場所ポリシーを作成して自動割り当てする",
+      "Discoveryを実行して場所情報を自動的に更新する",
+      "両方の場所を確認し、CIを正しい場所に更新して、重複している場所を削除する"
+    ],
+    answer: 3,
+    explanation: "一意の場所の割合が低い問題の推奨手順は「両方の場所を確認し、CIを正しい場所に更新して、重複している場所を削除する」ことです。重複した場所レコードを統合することで一意性が向上します。"
+  },
+  // ===== Q70 タスク割り当て =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "CMDBデータマネージャーポリシーを設定し、タスク割り当てタイプを「ユーザーグループフィールド」に設定した場合、デフォルトで利用可能なユーザーグループはどれですか？（2つ正解）",
+    options: [
+      "承認グループとセキュリティグループ",
+      "管理グループとデプロイグループ",
+      "サポートグループと変更グループ",
+      "インシデントグループとプロブレムグループ"
+    ],
+    answer: 2,
+    explanation: "タスク割り当てタイプを「ユーザーグループフィールド」に設定した場合、デフォルトで利用可能なユーザーグループは「サポートグループ」と「変更グループ」です。"
+  },
+  // ===== Q71 ポリシー種類 =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "CMDBデータマネージャーでは、どのような種類のポリシーを作成できますか？（2つ正解）",
+    options: [
+      "削除と更新",
+      "アーカイブと退職",
+      "検証と認証",
+      "移行とバックアップ"
+    ],
+    answer: 1,
+    explanation: "CMDBデータマネージャーでは「アーカイブ（Archive）」ポリシーと「退職（Retirement）」ポリシーを作成できます。これらのポリシーによりCIのライフサイクルを体系的に管理できます。"
+  },
+  // ===== Q72 CSDMデータ基盤 Walk =====
+  {
+    category: "CSDMデータ基盤",
+    text: "CSDMデータマネージャーは、テクノロジー管理サービスとテクノロジー管理オファリングがベストプラクティスにどれだけ合致しているかを示す指標を必要とします。CSDMデータ基盤ダッシュボードのどのタブにこの情報が表示されますか？",
+    options: [
+      "Walk",
+      "Foundation",
+      "Run",
+      "Crawl"
+    ],
+    answer: 0,
+    explanation: "テクノロジー管理サービスとテクノロジー管理オファリングに関する指標は「Walk」タブに表示されます。WalkタブはCSDMのWalk段階に対応するデータエンティティの品質を追跡します。"
+  },
+  // ===== Q73 CMDBグループ =====
+  {
+    category: "CMDBグループ",
+    text: "Windows管理チームは、CMDBグループを使用して構成アイテム（CI）をグループ化したいと考えています。どのような方法が利用できますか？（2つ正解）",
+    options: [
+      "静的グループとDiscoveryグループ",
+      "カスタムフィールドと分類タグ",
+      "ビジネスサービスリンクとロールベースフィルター",
+      "エンコードされたクエリとタグベースのクエリ"
+    ],
+    answer: 3,
+    explanation: "CMDBグループでCIをグループ化する方法として「エンコードされたクエリ」と「タグベースのクエリ」が利用できます。エンコードされたクエリは条件式でCIを動的にグループ化し、タグはCIに付与されたタグでグループ化します。"
+  },
+  // ===== Q74 アーカイブポリシー =====
+  {
+    category: "CMDBデータマネージャー",
+    text: "CMDB内のデータ量が管理可能な状態であることを保証するものは何ですか？",
+    options: [
+      "退職ポリシー",
+      "削除スケジュール",
+      "アーカイブポリシー",
+      "データ保持ルール"
+    ],
+    answer: 2,
+    explanation: "CMDB内のデータ量を管理可能な状態に保つのは「アーカイブポリシー」です。アーカイブポリシーにより、一定条件を満たした古いCIデータをアーカイブし、アクティブなCMDBのデータ量を適切に管理できます。"
+  },
+  // ===== Q75 CMDBデータ基盤ダッシュボード =====
+  {
+    category: "CMDBデータ基盤",
+    text: "CMDB管理者は、CMDBデータ基盤ダッシュボードがデータ品質を監視および改善するためのリソースであることを理解しています。このダッシュボードの利点は何ですか？",
+    options: [
+      "CMDBのすべてのCIを一覧表示してフィルタリングできる",
+      "意思決定に役立つ主要な健康関連指標を提供する",
+      "CMDBのデータを外部システムと自動同期する",
+      "Discovery Scheduleを管理して自動更新を設定する"
+    ],
+    answer: 1,
+    explanation: "CMDBデータ基盤ダッシュボードの利点は「意思決定に役立つ主要な健康関連指標を提供する」ことです。このダッシュボードはCMDBのデータ品質に関するKPIを可視化し、改善の優先順位付けを支援します。"
+  }
+];
+
+// ============================================================
+//  アプリ状態
+// ============================================================
+const QUIZ_SIZE = 40;
+const PASS_RATE = 65;
+const letters = ['A', 'B', 'C', 'D'];
+
+let shuffledQuestions = [];
+let currentIndex = 0;
+let userAnswers = {};
+
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  ['start-screen', 'quiz-screen', 'result-screen'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+}
+
+function showStart() { showScreen('start-screen'); }
+
+// ============================================================
+//  クイズ開始
+// ============================================================
+function startQuiz() {
+  shuffledQuestions = shuffle(questions).slice(0, QUIZ_SIZE);
+  currentIndex = 0;
+  userAnswers = {};
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+// ============================================================
+//  問題描画
+// ============================================================
+function renderQuestion() {
+  const q = shuffledQuestions[currentIndex];
+  const saved = userAnswers[currentIndex];
+
+  document.getElementById('progress-fill').style.width =
+    ((currentIndex / shuffledQuestions.length) * 100) + '%';
+  document.getElementById('q-counter').textContent =
+    `問題 ${currentIndex + 1} / ${shuffledQuestions.length}`;
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<span class="opt-letter">${letters[i]}</span><span>${opt}</span>`;
+
+    if (saved) {
+      div.classList.add('disabled');
+      if (i === saved.selected && saved.isCorrect) div.classList.add('correct');
+      if (i === saved.selected && !saved.isCorrect) div.classList.add('wrong');
+      if (!saved.isCorrect && i === saved.correct) div.classList.add('show-correct');
+    } else {
+      div.onclick = () => selectOption(i);
+    }
+    container.appendChild(div);
+  });
+
+  const expBox = document.getElementById('explanation-box');
+  if (saved) {
+    document.getElementById('explanation-text').textContent = q.explanation;
+    expBox.style.display = 'block';
+  } else {
+    expBox.style.display = 'none';
+    document.getElementById('explanation-text').textContent = '';
+  }
+
+  document.getElementById('prev-btn').disabled = currentIndex === 0;
+  const nextBtn = document.getElementById('next-btn');
+  if (currentIndex === shuffledQuestions.length - 1) {
+    nextBtn.textContent = '結果を見る';
+    nextBtn.disabled = !saved;
+  } else {
+    nextBtn.textContent = '次の問題 →';
+    nextBtn.disabled = !saved;
+  }
+}
+
+// ============================================================
+//  選択肢を選ぶ
+// ============================================================
+function selectOption(selected) {
+  const q = shuffledQuestions[currentIndex];
+  const isCorrect = selected === q.answer;
+  userAnswers[currentIndex] = { selected, correct: q.answer, isCorrect };
+
+  const options = document.querySelectorAll('.option');
+  options.forEach((el, i) => {
+    el.classList.add('disabled');
+    el.onclick = null;
+    if (i === selected && isCorrect) el.classList.add('correct');
+    if (i === selected && !isCorrect) el.classList.add('wrong');
+    if (!isCorrect && i === q.answer) el.classList.add('show-correct');
+  });
+
+  document.getElementById('explanation-text').textContent = q.explanation;
+  document.getElementById('explanation-box').style.display = 'block';
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.disabled = false;
+  if (currentIndex === shuffledQuestions.length - 1) {
+    nextBtn.textContent = '結果を見る';
+  }
+}
+
+// ============================================================
+//  ナビゲーション
+// ============================================================
+function nextQuestion() {
+  if (currentIndex === shuffledQuestions.length - 1) {
+    showResult();
+    return;
+  }
+  currentIndex++;
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (currentIndex <= 0) return;
+  currentIndex--;
+  renderQuestion();
+}
+
+// ============================================================
+//  中断確認
+// ============================================================
+function confirmAbort() {
+  if (confirm('試験を中断してスタート画面に戻りますか？')) {
+    showStart();
+  }
+}
+
+// ============================================================
+//  結果表示
+// ============================================================
+function showResult() {
+  const correct = Object.values(userAnswers).filter(a => a.isCorrect).length;
+  const total = shuffledQuestions.length;
+  const pct = Math.round((correct / total) * 100);
+  const passed = pct >= PASS_RATE;
+
+  document.getElementById('score-num').textContent = correct;
+  document.getElementById('result-title').textContent = passed ? '合格！おめでとうございます' : 'もう少し頑張りましょう';
+  const badge = document.getElementById('pass-badge');
+  badge.textContent = passed ? '✓ PASS' : '✗ FAIL';
+  badge.className = 'pass-badge ' + (passed ? 'pass' : 'fail');
+  document.getElementById('stat-correct').textContent = correct;
+  document.getElementById('stat-wrong').textContent = total - correct;
+  document.getElementById('stat-pct').textContent = pct + '%';
+
+  const reviewContainer = document.getElementById('review-container');
+  reviewContainer.innerHTML = '';
+  shuffledQuestions.forEach((q, idx) => {
+    const ans = userAnswers[idx];
+    if (!ans || ans.isCorrect) return;
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    div.innerHTML = `
+      <div class="review-q-num">問題 ${idx + 1} — ${q.category}</div>
+      <div class="review-q-text">${q.text}</div>
+      <div class="review-answer your">あなたの回答：${letters[ans.selected]}. ${q.options[ans.selected]}</div>
+      <div class="review-answer correct">正解：${letters[ans.correct]}. ${q.options[ans.correct]}</div>
+      <div class="review-exp">${q.explanation}</div>
+    `;
+    reviewContainer.appendChild(div);
+  });
+
+  if (reviewContainer.innerHTML === '') {
+    reviewContainer.innerHTML = '<p style="color:var(--sn-green);font-weight:600;">全問正解です！完璧です🎉</p>';
+  }
+
+  showScreen('result-screen');
+}
+
+// ============================================================
+//  再挑戦
+// ============================================================
+function restartQuiz() { startQuiz(); }
+
+// ============================================================
+//  イベントリスナー（タッチ対応）
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  var startBtn = document.getElementById('start-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', startQuiz);
+    startBtn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      startQuiz();
+    });
+  }
+});
+</script>
+</body>
+</html>

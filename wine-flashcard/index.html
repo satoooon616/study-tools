@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#4A1E24"/>
+  <title>ワインエキスパート フラッシュカード</title>
+  <style>
+    :root{
+      --w-red:#722F37; --w-red-l:#9B4B57; --w-red-d:#4A1E24;
+      --w-gold:#C9A94B; --w-gold-l:#F0D080; --w-gold-pale:#FDF6E3;
+      --w-bg:#F8F2EA; --w-card:#FFFFFF;
+      --w-border:#D9C4A0; --w-text:#2C1810; --w-muted:#7A5C4A;
+      --w-green:#2E7D32; --w-blue:#1565C0;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Helvetica Neue",Arial,sans-serif;background:var(--w-bg);color:var(--w-text);min-height:100vh;display:flex;flex-direction:column;}
+
+    header{background:var(--w-red-d);color:#fff;height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.35);position:sticky;top:0;z-index:100;}
+    .logo{font-size:19px;font-weight:700;letter-spacing:.5px;}
+    .logo span{color:var(--w-gold-l);}
+    .hdr-badge{background:var(--w-red-l);border-radius:4px;padding:2px 10px;font-size:12px;font-weight:600;}
+    .hdr-right{margin-left:auto;display:flex;gap:8px;}
+    .hdr-key{background:rgba(255,255,255,.15);border-radius:4px;padding:2px 8px;font-size:11px;}
+
+    main{flex:1;max-width:920px;width:100%;margin:0 auto;padding:22px 16px 40px;display:flex;flex-direction:column;gap:18px;}
+
+    /* STAT BAR */
+    .stat-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .stat-item{font-size:13px;color:var(--w-muted);}
+    .stat-item strong{color:var(--w-text);font-size:15px;}
+    .prog-wrap{flex:1;min-width:120px;background:#E0D0BC;border-radius:99px;height:6px;overflow:hidden;}
+    .prog-fill{background:var(--w-gold);height:100%;border-radius:99px;transition:width .35s ease;}
+    .learned-badge{background:#EDFFF5;color:var(--w-green);border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700;}
+
+    /* CATEGORY FILTER */
+    .cat-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;}
+    .cat-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:2px solid var(--w-border);background:#fff;font-size:13px;font-weight:600;color:var(--w-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .cat-btn:hover{border-color:var(--w-red-l);color:var(--w-red);}
+    .cat-btn.active{background:var(--w-red);border-color:var(--w-red);color:#fff;}
+
+    /* FLIP CARD */
+    .flip-wrap{width:100%;max-width:720px;margin:0 auto;height:380px;perspective:1200px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+    .flip-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);}
+    .flip-inner.flipped{transform:rotateY(180deg);}
+    .card-face{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(74,30,36,.15);}
+
+    /* FRONT */
+    .card-front{background:var(--w-card);border:2px solid var(--w-border);justify-content:center;align-items:center;text-align:center;padding:28px 36px;}
+    .face-hint-top{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--w-border);font-weight:600;}
+    .cat-tag{position:absolute;top:12px;left:16px;background:var(--w-red-d);color:#fff;border-radius:4px;padding:2px 9px;font-size:11px;font-weight:600;}
+    .term-en{font-size:30px;font-weight:800;color:var(--w-red-d);line-height:1.2;margin-bottom:10px;}
+    .term-ja{font-size:16px;color:var(--w-muted);font-weight:500;}
+    .grape-icon{position:absolute;bottom:14px;right:18px;font-size:22px;opacity:.3;}
+
+    /* BACK */
+    .card-back{background:var(--w-red-d);color:#fff;transform:rotateY(180deg);padding:22px 26px;overflow-y:auto;flex-direction:row;gap:16px;}
+    .back-left{flex:1;display:flex;flex-direction:column;gap:10px;}
+    .back-face-hint{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45);font-weight:600;flex-shrink:0;}
+    .def-text{font-size:14px;line-height:1.75;color:#fff;flex:1;}
+    .kw-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+    .kw-chip{background:rgba(255,255,255,.15);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:rgba(255,255,255,.9);}
+    .back-map{flex-shrink:0;width:200px;display:flex;align-items:center;justify-content:center;}
+    @media(max-width:600px){
+      /* カード裏面：縦並びに */
+      .card-back{flex-direction:column;padding:16px 18px;}
+      .back-map{width:100%;max-height:160px;justify-content:center;}
+
+      /* カードの高さ（positionはabsoluteのまま維持してflipを正常動作させる） */
+      .flip-wrap{height:360px;}
+      .flip-inner{height:360px;}
+    }
+
+    /* NAV */
+    .nav-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;}
+    .btn{padding:10px 20px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;
+      touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
+    .btn:active{transform:scale(.97);}
+    .btn:disabled{opacity:.35;cursor:default;transform:none;}
+    .btn-primary{background:var(--w-red);color:#fff;}
+    .btn-primary:hover:not(:disabled){background:var(--w-red-l);}
+    .btn-secondary{background:#fff;color:var(--w-red);border:2px solid var(--w-red);}
+    .btn-secondary:hover:not(:disabled){background:#FFF0F2;}
+    .btn-green{background:var(--w-green);color:#fff;}
+    .btn-green:hover:not(:disabled){opacity:.88;}
+    .btn-ghost{background:#fff;color:var(--w-muted);border:2px solid var(--w-border);}
+    .btn-ghost:hover{background:#f5f0e8;}
+    .kbd-hint{font-size:12px;color:var(--w-muted);text-align:center;}
+    kbd{display:inline-block;background:#e8e0d8;border:1px solid #c0b0a0;border-radius:3px;padding:1px 6px;font-size:11px;font-family:monospace;}
+
+    /* COMPLETED */
+    .completed-state{display:none;text-align:center;padding:48px 24px;}
+    .completed-state .big-emoji{font-size:52px;margin-bottom:16px;}
+    .completed-state h2{font-size:22px;font-weight:800;color:var(--w-red-d);margin-bottom:8px;}
+    .completed-state p{color:var(--w-muted);margin-bottom:24px;}
+    .completed-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+
+    /* ===== MOBILE ===== */
+    @media(max-width:600px){
+      /* ヘッダー：キーボードヒントを非表示、コンパクトに */
+      header{padding:0 14px;height:48px;}
+      .logo{font-size:16px;}
+      .hdr-badge{font-size:11px;padding:2px 8px;}
+      .hdr-right{display:none;}
+
+      /* メイン */
+      main{padding:14px 12px 32px;gap:14px;}
+
+      /* ステータスバー */
+      .stat-bar{gap:8px;}
+      .stat-item{font-size:12px;}
+      .stat-item strong{font-size:13px;}
+      .learned-badge{font-size:11px;padding:2px 8px;}
+
+      /* カテゴリボタン */
+      .cat-btn{padding:5px 12px;font-size:12px;}
+
+      /* カード表面 */
+      .card-front{padding:20px 18px;}
+      .term-en{font-size:22px;}
+      .term-ja{font-size:14px;}
+      .face-hint-top{font-size:10px;}
+
+      /* カード裏面 */
+      .def-text{font-size:13px;line-height:1.65;}
+      .back-face-hint{font-size:10px;}
+      .kw-chip{font-size:10px;}
+
+      /* ナビゲーションボタン：スマホ向け2×2グリッド */
+      .nav-controls{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        width:100%;
+        max-width:480px;
+        margin:0 auto;
+      }
+      /* 裏返す と 覚えた は2列グリッドの1行目 */
+      #btn-prev{order:1;}
+      #btn-next{order:2;}
+      .btn-secondary{order:3;}  /* 裏返す */
+      .btn-green{order:4;}      /* 覚えた */
+      /* シャッフルボタンは全幅で最下部 */
+      .nav-controls .btn-ghost:not(#btn-prev):not(#btn-next){
+        order:5;
+        grid-column:1/-1;
+        font-size:12px;
+        padding:9px;
+        color:var(--w-muted);
+      }
+      .btn{padding:13px 10px;font-size:14px;border-radius:6px;width:100%;}
+      #btn-prev,#btn-next{font-size:15px;padding:14px 8px;}
+
+      /* キーボードヒント非表示 */
+      .kbd-hint{display:none;}
+
+      /* 完了画面 */
+      .completed-state{padding:32px 16px;}
+      .completed-actions{flex-direction:column;}
+      .completed-actions .btn{width:100%;padding:14px;}
+    }
+
+    /* 極小画面(〜380px) */
+    @media(max-width:380px){
+      .term-en{font-size:19px;}
+      .flip-wrap{height:320px;}
+      .flip-inner{height:320px;}
+      .btn{font-size:13px;padding:12px 6px;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <span class="logo">🍷 <span>Wine</span> Expert</span>
+  <span class="hdr-badge">フラッシュカード</span>
+  <div class="hdr-right">
+    <span class="hdr-key">←→ 移動</span>
+    <span class="hdr-key">Space 裏返す</span>
+    <span class="hdr-key">Enter 覚えた</span>
+  </div>
+</header>
+
+<main>
+  <div class="stat-bar">
+    <div class="stat-item">カード <strong id="pos-cur">1</strong> / <strong id="pos-tot">0</strong></div>
+    <span style="color:var(--w-border)">|</span>
+    <div class="stat-item">残り <strong id="pos-rem">0</strong> 枚</div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="learned-badge" id="learned-badge">覚えた 0枚</span>
+  </div>
+
+  <div class="cat-scroll" id="cat-scroll"></div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div class="flip-wrap" id="flip-wrap" onclick="flipCard()">
+      <div class="flip-inner" id="flip-inner">
+        <div class="card-face card-front">
+          <span class="face-hint-top">クリックまたはSpaceで裏返す</span>
+          <span class="cat-tag" id="front-cat"></span>
+          <div class="term-en" id="front-en"></div>
+          <div class="term-ja" id="front-ja"></div>
+          <span class="grape-icon">🍇</span>
+        </div>
+        <div class="card-face card-back" id="card-back">
+          <div class="back-left">
+            <div class="back-face-hint">定義・解説</div>
+            <div class="def-text" id="back-def"></div>
+            <div class="kw-chips" id="back-chips"></div>
+          </div>
+          <div class="back-map" id="back-map"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <button class="btn btn-ghost" id="btn-prev" onclick="navigate(-1)">← 前へ</button>
+      <button class="btn btn-ghost" onclick="shuffleDeck()">🔀 シャッフル</button>
+      <button class="btn btn-secondary" onclick="flipCard()">↩ 裏返す</button>
+      <button class="btn btn-green" onclick="markLearned()">✓ 覚えた！</button>
+      <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">次へ →</button>
+    </div>
+    <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> 移動 &nbsp;<kbd>Space</kbd> 裏返す &nbsp;<kbd>Enter</kbd> 覚えた &nbsp;<kbd>S</kbd> シャッフル &nbsp;<kbd>R</kbd> リセット</div>
+  </div>
+
+  <div class="completed-state" id="completed-state">
+    <div class="big-emoji">🥂</div>
+    <h2>全カード完了！</h2>
+    <p id="completed-msg"></p>
+    <div class="completed-actions">
+      <button class="btn btn-primary" onclick="resetAll()">もう一度</button>
+      <button class="btn btn-ghost" onclick="resetLearned()">全リセット</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============================================================
+// SVG MAPS
+// ============================================================
+const SVG = {
+
+france: `<svg viewBox="0 0 250 255" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:200px;display:block;margin:0 auto">
+  <polygon points="9,75 28,52 60,37 120,5 195,50 222,65 218,92 202,132 213,196 180,210 140,222 62,205 67,130 42,115 9,75"
+    fill="#F5EFE0" stroke="#8B6914" stroke-width="1.5"/>
+  <!-- Champagne -->
+  <circle cx="157" cy="47" r="7" fill="#F5C518" stroke="#8B6914" stroke-width="1"/>
+  <text x="165" y="51" font-size="7" fill="#333" font-family="sans-serif">シャンパーニュ</text>
+  <!-- Alsace -->
+  <circle cx="215" cy="78" r="5" fill="#4CAF50" stroke="#2E7D32" stroke-width="1"/>
+  <text x="186" y="74" font-size="7" fill="#333" font-family="sans-serif">アルザス</text>
+  <!-- Chablis -->
+  <circle cx="153" cy="82" r="5" fill="#9C27B0" stroke="#6A1B9A" stroke-width="1"/>
+  <text x="160" y="86" font-size="7" fill="#333" font-family="sans-serif">シャブリ</text>
+  <!-- Loire -->
+  <circle cx="80" cy="96" r="6" fill="#2196F3" stroke="#0D47A1" stroke-width="1"/>
+  <text x="88" y="100" font-size="7" fill="#333" font-family="sans-serif">ロワール</text>
+  <!-- Burgundy -->
+  <circle cx="170" cy="110" r="7" fill="#9C27B0" stroke="#4A148C" stroke-width="1"/>
+  <text x="178" y="114" font-size="7" fill="#333" font-family="sans-serif">ブルゴーニュ</text>
+  <!-- Beaujolais -->
+  <circle cx="165" cy="134" r="5" fill="#E91E63" stroke="#880E4F" stroke-width="1"/>
+  <text x="173" y="138" font-size="7" fill="#333" font-family="sans-serif">ボジョレー</text>
+  <!-- N Rhone -->
+  <circle cx="170" cy="156" r="5" fill="#FF5722" stroke="#BF360C" stroke-width="1"/>
+  <text x="178" y="160" font-size="7" fill="#333" font-family="sans-serif">北ローヌ</text>
+  <!-- S Rhone -->
+  <circle cx="167" cy="177" r="5" fill="#FF7043" stroke="#BF360C" stroke-width="1"/>
+  <text x="175" y="181" font-size="7" fill="#333" font-family="sans-serif">南ローヌ</text>
+  <!-- Provence -->
+  <circle cx="195" cy="200" r="5" fill="#FF9800" stroke="#E65100" stroke-width="1"/>
+  <text x="178" y="218" font-size="7" fill="#333" font-family="sans-serif">プロヴァンス</text>
+  <!-- Languedoc -->
+  <circle cx="145" cy="207" r="5" fill="#795548" stroke="#3E2723" stroke-width="1"/>
+  <text x="110" y="222" font-size="7" fill="#333" font-family="sans-serif">ラングドック</text>
+  <!-- Bordeaux -->
+  <circle cx="95" cy="166" r="8" fill="#722F37" stroke="#4A1E24" stroke-width="1.5"/>
+  <text x="55" y="162" font-size="7" fill="#722F37" font-family="sans-serif" font-weight="bold">ボルドー</text>
+  <text x="8" y="18" font-size="9" fill="#666" font-family="sans-serif">N↑</text>
+</svg>`,
+
+bordeaux: `<svg viewBox="0 0 195 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:190px;display:block;margin:0 auto">
+  <!-- Gironde estuary -->
+  <polygon points="88,15 108,15 114,75 100,95 90,95 82,75" fill="#87CEEB" opacity=".75"/>
+  <!-- Garonne -->
+  <path d="M90,95 Q85,135 75,158 Q68,178 62,205" stroke="#87CEEB" stroke-width="4" fill="none"/>
+  <!-- Dordogne -->
+  <path d="M100,95 Q112,125 130,148 Q148,165 165,182" stroke="#87CEEB" stroke-width="3" fill="none"/>
+  <!-- Médoc LEFT BANK -->
+  <rect x="28" y="18" width="54" height="77" rx="5" fill="#722F37" opacity=".82"/>
+  <text x="55" y="50" font-size="9" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">メドック</text>
+  <text x="55" y="63" font-size="7" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Médoc</text>
+  <text x="55" y="78" font-size="6" fill="rgba(255,255,255,.7)" text-anchor="middle" font-family="sans-serif">CS主体</text>
+  <!-- Graves -->
+  <rect x="28" y="100" width="54" height="52" rx="5" fill="#8B4513" opacity=".8"/>
+  <text x="55" y="124" font-size="9" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">グラーヴ</text>
+  <text x="55" y="138" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">CS/白品種</text>
+  <!-- Pomerol RIGHT BANK -->
+  <rect x="118" y="62" width="48" height="28" rx="4" fill="#7B68EE" opacity=".85"/>
+  <text x="142" y="80" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ポムロール</text>
+  <!-- Saint-Emilion -->
+  <rect x="118" y="95" width="62" height="52" rx="5" fill="#9B4B57" opacity=".85"/>
+  <text x="149" y="117" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">サン・テミリオン</text>
+  <text x="149" y="130" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Merlot主体</text>
+  <!-- Entre-Deux-Mers -->
+  <polygon points="78,158 130,148 165,182 75,202" fill="#4CAF50" opacity=".45"/>
+  <text x="115" y="180" font-size="6" fill="#1B5E20" text-anchor="middle" font-family="sans-serif">アントル・ドゥ・メール</text>
+  <!-- Labels -->
+  <text x="8" y="40" font-size="8" fill="#555" font-family="sans-serif">左岸</text>
+  <text x="152" y="40" font-size="8" fill="#555" font-family="sans-serif">右岸</text>
+  <text x="8" y="12" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`,
+
+burgundy: `<svg viewBox="0 0 180 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:160px;display:block;margin:0 auto">
+  <!-- Chablis (far north) -->
+  <rect x="40" y="8" width="100" height="32" rx="5" fill="#9C27B0" opacity=".75"/>
+  <text x="90" y="22" font-size="9" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">シャブリ</text>
+  <text x="90" y="34" font-size="7" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Chablis</text>
+  <!-- Gap -->
+  <text x="90" y="58" font-size="8" fill="#999" text-anchor="middle" font-family="sans-serif">〜〜〜〜</text>
+  <!-- Côte de Nuits -->
+  <rect x="55" y="65" width="70" height="65" rx="5" fill="#4A148C" opacity=".8"/>
+  <text x="90" y="90" font-size="9" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">コート・ド・ニュイ</text>
+  <text x="90" y="102" font-size="7" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Pinot Noir</text>
+  <text x="90" y="114" font-size="7" fill="rgba(255,255,255,.7)" text-anchor="middle" font-family="sans-serif">Gevrey-Chambertin等</text>
+  <!-- Côte de Beaune -->
+  <rect x="45" y="135" width="90" height="65" rx="5" fill="#6A1B9A" opacity=".75"/>
+  <text x="90" y="158" font-size="9" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">コート・ド・ボーヌ</text>
+  <text x="90" y="170" font-size="7" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Chardonnay主体</text>
+  <text x="90" y="182" font-size="7" fill="rgba(255,255,255,.7)" text-anchor="middle" font-family="sans-serif">Meursault, Puligny等</text>
+  <!-- Chalonnaise -->
+  <rect x="50" y="205" width="80" height="32" rx="4" fill="#7B1FA2" opacity=".65"/>
+  <text x="90" y="225" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif">コート・シャロネーズ</text>
+  <!-- Maconnais -->
+  <rect x="45" y="242" width="90" height="32" rx="4" fill="#8E24AA" opacity=".6"/>
+  <text x="90" y="262" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif">マコネ</text>
+  <text x="90" y="273" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Pouilly-Fuissé等</text>
+  <text x="8" y="14" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`,
+
+champagne: `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:190px;display:block;margin:0 auto">
+  <!-- Montagne de Reims -->
+  <ellipse cx="100" cy="65" rx="70" ry="35" fill="#F5C518" opacity=".8"/>
+  <text x="100" y="60" font-size="8" fill="#333" text-anchor="middle" font-family="sans-serif" font-weight="bold">モンターニュ・ド・ランス</text>
+  <text x="100" y="72" font-size="7" fill="#555" text-anchor="middle" font-family="sans-serif">Pinot Noir主体</text>
+  <!-- Vallée de la Marne -->
+  <rect x="18" y="105" width="164" height="35" rx="6" fill="#FF9800" opacity=".75"/>
+  <text x="100" y="120" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ヴァレー・ド・ラ・マルヌ</text>
+  <text x="100" y="133" font-size="7" fill="rgba(255,255,255,.9)" text-anchor="middle" font-family="sans-serif">Pinot Meunier主体</text>
+  <!-- Côte des Blancs -->
+  <rect x="55" y="148" width="90" height="50" rx="5" fill="#E8E8E8" stroke="#999" stroke-width="1"/>
+  <text x="100" y="168" font-size="8" fill="#333" text-anchor="middle" font-family="sans-serif" font-weight="bold">コート・デ・ブラン</text>
+  <text x="100" y="180" font-size="7" fill="#555" text-anchor="middle" font-family="sans-serif">Chardonnay 100%</text>
+  <text x="100" y="192" font-size="7" fill="#555" text-anchor="middle" font-family="sans-serif">Blanc de Blancs の本場</text>
+  <!-- Reims label -->
+  <circle cx="100" cy="40" r="5" fill="#722F37"/>
+  <text x="100" y="36" font-size="7" fill="#722F37" text-anchor="middle" font-family="sans-serif">Reims</text>
+  <!-- Epernay -->
+  <circle cx="100" cy="105" r="5" fill="#722F37"/>
+  <text x="112" y="108" font-size="7" fill="#722F37" font-family="sans-serif">Épernay</text>
+  <text x="8" y="14" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`,
+
+italy: `<svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:160px;display:block;margin:0 auto">
+  <!-- Italy boot shape (simplified) -->
+  <path d="M50,20 Q80,10 130,18 Q155,25 160,60 Q165,95 158,130 Q155,155 145,175 Q155,190 158,210 Q155,230 145,245 Q135,260 125,275 Q115,285 110,295 Q105,305 100,310 Q95,300 92,288 Q85,270 82,255 Q88,245 95,235 Q105,222 108,208 Q100,195 88,185 Q78,175 68,168 Q60,158 58,145 Q52,120 48,95 Q44,68 50,20 Z"
+    fill="#F8F0E0" stroke="#8B6914" stroke-width="1.5"/>
+  <!-- Piedmont -->
+  <ellipse cx="75" cy="52" rx="28" ry="18" fill="#722F37" opacity=".8"/>
+  <text x="75" y="56" font-size="7" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ピエモンテ</text>
+  <!-- Veneto -->
+  <ellipse cx="130" cy="58" rx="25" ry="16" fill="#E53935" opacity=".75"/>
+  <text x="130" y="62" font-size="7" fill="#fff" text-anchor="middle" font-family="sans-serif">ヴェネト</text>
+  <!-- Tuscany -->
+  <ellipse cx="95" cy="130" rx="32" ry="24" fill="#8B4513" opacity=".8"/>
+  <text x="95" y="128" font-size="7" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">トスカーナ</text>
+  <text x="95" y="140" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Chianti/Brunello</text>
+  <!-- Umbria -->
+  <ellipse cx="105" cy="168" rx="20" ry="14" fill="#6D4C41" opacity=".7"/>
+  <text x="105" y="172" font-size="6" fill="#fff" text-anchor="middle" font-family="sans-serif">ウンブリア</text>
+  <!-- Campania -->
+  <ellipse cx="115" cy="225" rx="22" ry="15" fill="#388E3C" opacity=".7"/>
+  <text x="115" y="229" font-size="6" fill="#fff" text-anchor="middle" font-family="sans-serif">カンパーニア</text>
+  <!-- Sicily -->
+  <ellipse cx="92" cy="305" rx="20" ry="10" fill="#FF8F00" opacity=".75"/>
+  <text x="92" y="309" font-size="6" fill="#fff" text-anchor="middle" font-family="sans-serif">シチリア</text>
+  <text x="8" y="14" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`,
+
+spain: `<svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:210px;display:block;margin:0 auto">
+  <!-- Spain outline (rough rectangle + Portugal side removed) -->
+  <polygon points="40,20 220,20 230,50 225,120 200,160 150,175 80,168 30,145 18,100 20,55 40,20"
+    fill="#F5F0E8" stroke="#8B6914" stroke-width="1.5"/>
+  <!-- Portugal (lighter) -->
+  <polygon points="18,55 40,50 38,130 30,145 18,130 18,55"
+    fill="#E8E0D0" stroke="#8B6914" stroke-width="1"/>
+  <text x="26" y="100" font-size="6" fill="#888" text-anchor="middle" transform="rotate(-90,26,100)" font-family="sans-serif">Portugal</text>
+  <!-- Rioja -->
+  <ellipse cx="140" cy="58" rx="28" ry="17" fill="#722F37" opacity=".85"/>
+  <text x="140" y="56" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">リオハ</text>
+  <text x="140" y="67" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Tempranillo</text>
+  <!-- Ribera del Duero -->
+  <ellipse cx="110" cy="90" rx="30" ry="16" fill="#9B4B57" opacity=".8"/>
+  <text x="110" y="88" font-size="7" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">リベラ・デル・ドゥエロ</text>
+  <text x="110" y="99" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Tempranillo</text>
+  <!-- Priorat -->
+  <ellipse cx="185" cy="100" rx="22" ry="14" fill="#4A1E24" opacity=".8"/>
+  <text x="185" y="104" font-size="7" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">プリオラート</text>
+  <!-- Rias Baixas -->
+  <ellipse cx="52" cy="80" rx="18" ry="12" fill="#2196F3" opacity=".75"/>
+  <text x="52" y="84" font-size="6" fill="#fff" text-anchor="middle" font-family="sans-serif">リアス・バイシャス</text>
+  <!-- Jerez/Sherry -->
+  <ellipse cx="85" cy="155" rx="25" ry="13" fill="#FF8F00" opacity=".8"/>
+  <text x="85" y="153" font-size="7" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ヘレス(シェリー)</text>
+  <text x="85" y="163" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Jerez</text>
+  <!-- Cava (Penedes) -->
+  <ellipse cx="182" cy="68" rx="20" ry="12" fill="#F5C518" opacity=".8"/>
+  <text x="182" y="72" font-size="7" fill="#333" text-anchor="middle" font-family="sans-serif" font-weight="bold">カヴァ</text>
+  <text x="8" y="14" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`,
+
+germany: `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:175px;display:block;margin:0 auto">
+  <!-- Rhine river (vertical) -->
+  <path d="M100,10 Q105,50 100,90 Q95,120 100,150 Q105,185 100,240" stroke="#87CEEB" stroke-width="5" fill="none"/>
+  <!-- Mosel river (branch) -->
+  <path d="M60,80 Q75,90 100,90" stroke="#87CEEB" stroke-width="3" fill="none"/>
+  <!-- Rheingau -->
+  <rect x="95" y="108" width="75" height="28" rx="4" fill="#722F37" opacity=".8"/>
+  <text x="132" y="120" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ラインガウ</text>
+  <text x="132" y="130" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Riesling</text>
+  <!-- Mosel -->
+  <rect x="20" y="72" width="75" height="28" rx="4" fill="#1565C0" opacity=".8"/>
+  <text x="57" y="84" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">モーゼル</text>
+  <text x="57" y="94" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Riesling / 繊細・高酸</text>
+  <!-- Rheinhessen -->
+  <rect x="85" y="145" width="75" height="28" rx="4" fill="#9C27B0" opacity=".75"/>
+  <text x="122" y="157" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ラインヘッセン</text>
+  <text x="122" y="167" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">最大産地</text>
+  <!-- Pfalz -->
+  <rect x="80" y="182" width="60" height="28" rx="4" fill="#E91E63" opacity=".75"/>
+  <text x="110" y="200" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">ファルツ</text>
+  <!-- Franken -->
+  <rect x="130" y="72" width="58" height="28" rx="4" fill="#FF8F00" opacity=".75"/>
+  <text x="159" y="84" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">フランケン</text>
+  <text x="159" y="94" font-size="6" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Bocksbeutel</text>
+  <!-- Rhine label -->
+  <text x="104" y="30" font-size="7" fill="#1565C0" font-family="sans-serif">ライン川</text>
+  <text x="55" y="68" font-size="7" fill="#1565C0" font-family="sans-serif">モーゼル川</text>
+  <text x="8" y="14" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`,
+
+hierarchy_burgundy: `<svg viewBox="0 0 210 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:200px;display:block;margin:0 auto">
+  <text x="105" y="15" font-size="9" fill="#4A148C" text-anchor="middle" font-family="sans-serif" font-weight="bold">ブルゴーニュ品質ピラミッド</text>
+  <!-- Grand Cru -->
+  <polygon points="105,28 145,55 65,55" fill="#4A148C" opacity=".9"/>
+  <text x="105" y="47" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">グラン・クリュ</text>
+  <!-- Premier Cru -->
+  <polygon points="65,57 145,57 162,90 48,90" fill="#6A1B9A" opacity=".82"/>
+  <text x="105" y="78" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">プルミエ・クリュ</text>
+  <!-- Village -->
+  <rect x="35" y="92" width="140" height="28" fill="#9C27B0" opacity=".75"/>
+  <text x="105" y="110" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">村名（ヴィラージュ）</text>
+  <!-- Regional -->
+  <rect x="20" y="122" width="170" height="28" fill="#CE93D8" opacity=".8"/>
+  <text x="105" y="140" font-size="8" fill="#4A148C" text-anchor="middle" font-family="sans-serif" font-weight="bold">地域名（レジョナル）</text>
+  <text x="105" y="152" font-size="6" fill="#555" text-anchor="middle" font-family="sans-serif">Bourgogne AOC等</text>
+  <text x="12" y="168" font-size="6" fill="#888" font-family="sans-serif">上位ほど少量・高品質</text>
+</svg>`,
+
+pradikat: `<svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:200px;display:block;margin:0 auto">
+  <text x="105" y="15" font-size="9" fill="#1565C0" text-anchor="middle" font-family="sans-serif" font-weight="bold">ドイツ Prädikatswein</text>
+  <rect x="15" y="22" width="180" height="24" rx="3" fill="#E3F2FD" stroke="#1565C0" stroke-width="1"/>
+  <text x="105" y="38" font-size="8" fill="#0D47A1" text-anchor="middle" font-family="sans-serif">Kabinett — 最も辛口寄り・軽め</text>
+  <rect x="15" y="50" width="180" height="24" rx="3" fill="#BBDEFB" stroke="#1565C0" stroke-width="1"/>
+  <text x="105" y="66" font-size="8" fill="#0D47A1" text-anchor="middle" font-family="sans-serif">Spätlese — 遅摘み</text>
+  <rect x="15" y="78" width="180" height="24" rx="3" fill="#90CAF9" stroke="#1565C0" stroke-width="1"/>
+  <text x="105" y="94" font-size="8" fill="#0D47A1" text-anchor="middle" font-family="sans-serif">Auslese — 選果・甘口傾向</text>
+  <rect x="15" y="106" width="180" height="24" rx="3" fill="#64B5F6" stroke="#1565C0" stroke-width="1"/>
+  <text x="105" y="122" font-size="8" fill="#0D47A1" text-anchor="middle" font-family="sans-serif">Beerenauslese (BA) — 貴腐果</text>
+  <rect x="15" y="134" width="180" height="24" rx="3" fill="#42A5F5" stroke="#1565C0" stroke-width="1"/>
+  <text x="105" y="150" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif">Eiswein — 氷結果</text>
+  <rect x="15" y="162" width="180" height="24" rx="3" fill="#1565C0"/>
+  <text x="105" y="178" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif">TBA — 最高糖度・極甘口</text>
+  <text x="12" y="205" font-size="6" fill="#888" font-family="sans-serif">↑ 熟度・糖度が高いほど上位</text>
+</svg>`,
+
+newworld: `<svg viewBox="0 0 260 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:235px;display:block;margin:0 auto">
+  <rect x="0" y="0" width="260" height="180" fill="#ADE8F4" rx="6"/>
+  <!-- North America -->
+  <ellipse cx="52" cy="52" rx="38" ry="30" fill="#E8D5A3"/>
+  <text x="52" y="48" font-size="7" fill="#333" text-anchor="middle" font-family="sans-serif" font-weight="bold">カリフォルニア</text>
+  <text x="52" y="58" font-size="6" fill="#555" text-anchor="middle" font-family="sans-serif">ナパ/ソノマ</text>
+  <!-- South America -->
+  <ellipse cx="72" cy="128" rx="25" ry="32" fill="#C8E6C9"/>
+  <text x="72" y="120" font-size="7" fill="#1B5E20" text-anchor="middle" font-family="sans-serif" font-weight="bold">チリ</text>
+  <text x="72" y="130" font-size="6" fill="#2E7D32" text-anchor="middle" font-family="sans-serif">カルメネール</text>
+  <ellipse cx="108" cy="148" rx="20" ry="22" fill="#A5D6A7"/>
+  <text x="108" y="144" font-size="7" fill="#1B5E20" text-anchor="middle" font-family="sans-serif" font-weight="bold">アルゼンチン</text>
+  <text x="108" y="154" font-size="6" fill="#2E7D32" text-anchor="middle" font-family="sans-serif">マルベック</text>
+  <!-- South Africa -->
+  <ellipse cx="168" cy="118" rx="22" ry="20" fill="#FFCC80"/>
+  <text x="168" y="115" font-size="7" fill="#333" text-anchor="middle" font-family="sans-serif" font-weight="bold">南アフリカ</text>
+  <text x="168" y="126" font-size="6" fill="#555" text-anchor="middle" font-family="sans-serif">ステレンボッシュ</text>
+  <!-- Australia -->
+  <ellipse cx="215" cy="118" rx="30" ry="25" fill="#FFAB40"/>
+  <text x="215" y="115" font-size="7" fill="#333" text-anchor="middle" font-family="sans-serif" font-weight="bold">オーストラリア</text>
+  <text x="215" y="126" font-size="6" fill="#555" text-anchor="middle" font-family="sans-serif">バロッサ/Shiraz</text>
+  <!-- New Zealand -->
+  <ellipse cx="238" cy="155" rx="16" ry="14" fill="#80CBC4"/>
+  <text x="238" y="153" font-size="6" fill="#00695C" text-anchor="middle" font-family="sans-serif" font-weight="bold">NZ</text>
+  <text x="238" y="163" font-size="6" fill="#00695C" text-anchor="middle" font-family="sans-serif">SB</text>
+</svg>`,
+
+rhone: `<svg viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:155px;display:block;margin:0 auto">
+  <!-- Rhone river -->
+  <path d="M90,10 Q88,70 90,130 Q92,180 90,250" stroke="#87CEEB" stroke-width="5" fill="none"/>
+  <!-- Northern Rhone -->
+  <rect x="95" y="18" width="75" height="100" rx="5" fill="#FF5722" opacity=".8"/>
+  <text x="132" y="42" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">北ローヌ</text>
+  <text x="132" y="54" font-size="7" fill="rgba(255,255,255,.9)" text-anchor="middle" font-family="sans-serif">Syrah（赤）</text>
+  <text x="132" y="66" font-size="7" fill="rgba(255,255,255,.85)" text-anchor="middle" font-family="sans-serif">Viognier（白）</text>
+  <text x="132" y="82" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Côte-Rôtie</text>
+  <text x="132" y="93" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Hermitage</text>
+  <text x="132" y="104" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Cornas</text>
+  <!-- Southern Rhone -->
+  <rect x="95" y="135" width="75" height="100" rx="5" fill="#FF7043" opacity=".8"/>
+  <text x="132" y="158" font-size="8" fill="#fff" text-anchor="middle" font-family="sans-serif" font-weight="bold">南ローヌ</text>
+  <text x="132" y="170" font-size="7" fill="rgba(255,255,255,.9)" text-anchor="middle" font-family="sans-serif">Grenache主体GSM</text>
+  <text x="132" y="185" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Ch.neuf-du-Pape</text>
+  <text x="132" y="196" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Gigondas</text>
+  <text x="132" y="207" font-size="6" fill="rgba(255,255,255,.8)" text-anchor="middle" font-family="sans-serif">Vacqueyras</text>
+  <!-- Lyon -->
+  <circle cx="90" cy="18" r="4" fill="#333"/>
+  <text x="60" y="22" font-size="7" fill="#333" font-family="sans-serif">リヨン</text>
+  <!-- Gap label -->
+  <text x="10" y="130" font-size="7" fill="#aaa" font-family="sans-serif">──分断──</text>
+  <text x="8" y="14" font-size="8" fill="#888" font-family="sans-serif">N↑</text>
+</svg>`
+};
+
+// ============================================================
+// CARD DATA
+// ============================================================
+const ALL_CARDS = [
+
+// ===== フランス産地概要 =====
+{cat:"フランス全体",en:"French Wine Regions",ja:"フランスワイン産地",
+ def:"フランスは世界最高峰のワイン産地。北から：シャンパーニュ、アルザス、ロワール、ブルゴーニュ、ボジョレー、コート・デュ・ローヌ、プロヴァンス、ラングドック・ルーション、ボルドー。各産地にAOC（原産地呼称制度）が定められている。",
+ chips:["AOC","テロワール","原産地呼称"],map:"france"},
+
+// ===== ボルドー =====
+{cat:"ボルドー",en:"Bordeaux",ja:"ボルドー",
+ def:"フランス南西部・ガロンヌ川とジロンド川河口の大産地。左岸（カベルネ・ソーヴィニヨン主体）と右岸（メルロ主体）に大別される。1855年格付け（メドック・ソーテルヌ）や2012年改定サン・テミリオン格付けが有名。",
+ chips:["左岸","右岸","1855年格付け"],map:"bordeaux"},
+
+{cat:"ボルドー",en:"Left Bank / Médoc",ja:"左岸・メドック",
+ def:"ジロンド川の西側。礫質土壌でカベルネ・ソーヴィニヨンが主体。主要AOC：マルゴー、サン・ジュリアン、ポイヤック（5大シャトーのうち3つ）、サン・テステフ。骨格がしっかりした長熟タイプ。",
+ chips:["CS主体","礫質","長熟","ポイヤック"],map:"bordeaux"},
+
+{cat:"ボルドー",en:"Right Bank / Saint-Émilion・Pomerol",ja:"右岸・サン・テミリオン・ポムロール",
+ def:"ジロンド川東側。粘土石灰質土壌でメルロが主体。サン・テミリオン（ペトリュス等のガレージワインも近郊）、ポムロール（ペトリュス）。柔らかなタンニンと豊かな果実味が特徴。",
+ chips:["Merlot主体","粘土質","ポムロール","ペトリュス"],map:"bordeaux"},
+
+{cat:"ボルドー",en:"1855 Classification",ja:"1855年格付け",
+ def:"ナポレオン3世万博に際し制定されたメドックの格付け。第1級〜第5級に61シャトーを分類。第1級は5シャトー（ラフィット、ラトゥール、マルゴー、オー・ブリオン、ムートン）。現在もほぼそのまま有効。",
+ chips:["5大シャトー","第1〜5級","メドック"],map:null},
+
+{cat:"ボルドー",en:"Sauternes",ja:"ソーテルヌ",
+ def:"ボルドー南部・シロン川合流点の貴腐ワイン産地。ボトリティス・シネレア（貴腐菌）による水分蒸発で糖度が凝縮。セミヨン主体にソーヴィニヨン・ブランをブレンド。シャトー・ディケムが筆頭。",
+ chips:["貴腐ワイン","セミヨン","ディケム","甘口"],map:null},
+
+{cat:"ボルドー",en:"En Primeur",ja:"アン・プリムール（先物取引）",
+ def:"樽熟成中のワインをボトリング前に先物で販売するボルドー独自の慣習。毎年4月頃にネゴシアン経由で取引される。収穫翌年に価格が決まり、2〜3年後に瓶詰めされて引き渡される。",
+ chips:["先物","ネゴシアン","毎年4月"],map:null},
+
+{cat:"ボルドー",en:"Pétrus",ja:"ペトリュス",
+ def:"ポムロールを代表する幻のワイン。約11.5haの畑でメルロ100%から造られる。格付けは受けていないが世界最高価格ワインの一つ。特殊なブールー粘土質土壌が個性の源。",
+ chips:["ポムロール","Merlot100%","非格付け","高価"],map:null},
+
+// ===== ブルゴーニュ =====
+{cat:"ブルゴーニュ",en:"Burgundy Hierarchy",ja:"ブルゴーニュ品質ピラミッド",
+ def:"4段階の品質ピラミッド：①グラン・クリュ（特級畑、最上位）②プルミエ・クリュ（一級畑）③村名（ヴィラージュ）AOC ④地域名（レジョナル）AOC。上位ほど畑面積が小さく生産量が少ない。",
+ chips:["グラン・クリュ","プルミエ・クリュ","畑格付け"],map:"hierarchy_burgundy"},
+
+{cat:"ブルゴーニュ",en:"Côte de Nuits",ja:"コート・ド・ニュイ",
+ def:"ブルゴーニュのコート・ドールの北半分。ジュヴレ・シャンベルタン、モレ・サン・ドニ、シャンボール・ミュジニー、ヴォーヌ・ロマネ、ニュイ・サン・ジョルジュなどを擁する。ピノ・ノワール最高峰産地。",
+ chips:["ピノ・ノワール","ジュヴレ","ヴォーヌ・ロマネ"],map:"burgundy"},
+
+{cat:"ブルゴーニュ",en:"Côte de Beaune",ja:"コート・ド・ボーヌ",
+ def:"コート・ドールの南半分。アロース・コルトン、ボーヌ、ポマール、ヴォルネイ（赤）、ムルソー、ピュリニー・モンラッシェ、シャサーニュ・モンラッシェ（白）などを含む。シャルドネの銘醸地。",
+ chips:["シャルドネ","ムルソー","モンラッシェ"],map:"burgundy"},
+
+{cat:"ブルゴーニュ",en:"Romanée-Conti (DRC)",ja:"ロマネ・コンティ",
+ def:"ヴォーヌ・ロマネ村にある1.8haのモノポール（単独所有畑）。ドメーヌ・ド・ラ・ロマネ・コンティ（DRC）が所有。ピノ・ノワール100%。世界で最も高価なワインの一つ。",
+ chips:["モノポール","DRC","ヴォーヌ・ロマネ","世界最高峰"],map:null},
+
+{cat:"ブルゴーニュ",en:"Chablis",ja:"シャブリ",
+ def:"ブルゴーニュ北部の白ワイン産地。キンメリジャン土壌（牡蠣殻を含む石灰質泥灰土）でシャルドネを栽培。樽を使わず造られるスタイルが多く、ミネラル感と鋭い酸が特徴。グラン・クリュは7つ。",
+ chips:["キンメリジャン","シャルドネ","ミネラル","無樽"],map:"burgundy"},
+
+{cat:"ブルゴーニュ",en:"Climat / Lieu-dit",ja:"クリマ・リュー・ディ",
+ def:"ブルゴーニュ特有の概念。クリマ（Climat）は地形・土壌・微気候が均一な個別の畑区画の名称。リュー・ディは地名。2015年ユネスコ世界遺産登録。これによりブドウ産地の細かい格差が表現される。",
+ chips:["テロワール","世界遺産","畑名","区画"],map:null},
+
+{cat:"ブルゴーニュ",en:"Négociant / Domaine",ja:"ネゴシアン・ドメーヌ",
+ def:"ネゴシアン：生産者からブドウや醸造酒を買い取りブレンド・瓶詰めする商社。ルイ・ジャドなど。ドメーヌ：自社畑のブドウのみで醸造。コープ：農協系。どちらが上質かは一概に言えない。",
+ chips:["ネゴシアン","ドメーヌ","流通","買いブドウ"],map:null},
+
+// ===== シャンパーニュ =====
+{cat:"シャンパーニュ",en:"Champagne",ja:"シャンパーニュ",
+ def:"フランス北東部の発泡性ワイン産地。瓶内二次発酵（méthode champenoise）で造られるものだけが「シャンパン」を名乗れる。主要品種：ピノ・ノワール、シャルドネ、ピノ・ムニエ。中心都市はランスとエペルネ。",
+ chips:["瓶内二次発酵","ランス","エペルネ","AOC"],map:"champagne"},
+
+{cat:"シャンパーニュ",en:"Méthode Champenoise",ja:"シャンパーニュ方式（瓶内二次発酵）",
+ def:"①一次発酵→②ティラージュ（リキュールと酵母を加え打栓）→③瓶内二次発酵（炭酸生成）→④熟成（澱と接触）→⑤ルミアージュ（澱を集める）→⑥デゴルジュマン（澱を除去）→⑦ドサージュ（甘さ調整）→最終打栓。",
+ chips:["二次発酵","ルミアージュ","デゴルジュマン","ドサージュ"],map:null},
+
+{cat:"シャンパーニュ",en:"Blanc de Blancs / Blanc de Noirs",ja:"ブラン・ド・ブラン / ブラン・ド・ノワール",
+ def:"Blanc de Blancs：白ブドウ（シャルドネ）のみで造る白スパークリング。繊細・柑橘系。Blanc de Noirs：黒ブドウ（ピノ・ノワール/ムニエ）を白ワイン製法で造る白（果皮を長時間接触させない）。",
+ chips:["シャルドネ","ピノ・ノワール","製法","色の違い"],map:null},
+
+{cat:"シャンパーニュ",en:"Dosage (Liqueur d'expédition)",ja:"ドサージュ（門出のリキュール）",
+ def:"デゴルジュマン後にワインの目減り分を補うため加える甘さ調整液（ワイン＋砂糖）。甘さによる分類：Brut Nature（無添加）＜ Extra Brut ＜ Brut ＜ Extra Dry ＜ Sec ＜ Demi-Sec ＜ Doux。",
+ chips:["甘さ調整","Brut","残糖","デゴルジュマン後"],map:null},
+
+{cat:"シャンパーニュ",en:"Non-vintage (NV) / Vintage",ja:"ノンヴィンテージ / ヴィンテージシャンパン",
+ def:"NV：複数年のワインをブレンドし、一定の品質・スタイルを維持したもの。ハウスのフラッグシップ。Vintage：特別に優れた年のみ収穫年を表示して造る。より深みがあり長熟に向く。最低3年以上熟成必須。",
+ chips:["ブレンド","複数年","単一年","熟成"],map:null},
+
+{cat:"シャンパーニュ",en:"Prestige Cuvée",ja:"プレステージ・キュヴェ",
+ def:"各メゾン（シャンパーニュハウス）の最上位ブランド。例：モエ＆シャンドンの「ドン・ペリニヨン」、クリュッグの「クリュッグ グラン・キュヴェ」、ルイ・ロデレールの「クリスタル」。セラーマスターの技術の結晶。",
+ chips:["ドン・ペリニヨン","クリスタル","最上位","各ハウス"],map:null},
+
+{cat:"シャンパーニュ",en:"Grand Cru / Premier Cru in Champagne",ja:"シャンパーニュのグラン・クリュ・プルミエ・クリュ",
+ def:"シャンパーニュではエシェル・デ・クリュ（cru格付けスケール）でビレッジを100点満点で評価。100点がグラン・クリュ（17村）、90〜99点がプルミエ・クリュ（44村）。ブルゴーニュとは意味が異なる。",
+ chips:["エシェル・デ・クリュ","17村","格付け","村単位"],map:null},
+
+// ===== ローヌ =====
+{cat:"ローヌ",en:"Côte-Rôtie",ja:"コート・ロティ",
+ def:"北ローヌ最北端の急斜面AOC。シラー100%（最大20%ヴィオニエ混醸可）。急傾斜の花崗岩土壌（ブリュンとブロンドの丘）。フィネスと胡椒・スミレのアロマ。主要生産者：ギガル、ジャメ。",
+ chips:["シラー","急斜面","花崗岩","胡椒"],map:"rhone"},
+
+{cat:"ローヌ",en:"Châteauneuf-du-Pape",ja:"シャトーヌフ・デュ・パプ",
+ def:"南ローヌ最高峰AOC。13品種ブレンド可（グルナッシュ主体）。大きな丸石（ガレ・ルーレ）が特徴的な土壌で昼間の熱を蓄え夜間放出。アルコール度が高くボディ豊か。白も生産。",
+ chips:["グルナッシュ","ガレ・ルーレ","南ローヌ","高アルコール"],map:"rhone"},
+
+{cat:"ローヌ",en:"GSM Blend",ja:"GSMブレンド",
+ def:"Grenache（グルナッシュ）＋Syrah（シラー）＋Mourvèdre（ムールヴェードル）の頭文字。南ローヌ・プロヴァンス・スペイン（Garnacha/Monastrell）・オーストラリアなどで広く用いられるブレンド。",
+ chips:["グルナッシュ","シラー","ムールヴェードル","南フランス"],map:null},
+
+// ===== ロワール =====
+{cat:"ロワール",en:"Loire Valley",ja:"ロワール渓谷",
+ def:"フランス最長のロワール川沿いに広がる多様な産地。西から：ペイ・ナンテ（ミュスカデ）、アンジュー（シュナン・ブラン）、トゥーレーヌ、サントル（サンセール、プイィ・フュメ）。",
+ chips:["ミュスカデ","シュナン・ブラン","ソーヴィニヨン・ブラン","多様"],map:null},
+
+{cat:"ロワール",en:"Sancerre / Pouilly-Fumé",ja:"サンセール / プイィ・フュメ",
+ def:"ロワール中央部のソーヴィニヨン・ブラン2大銘醸地。サンセール（左岸）とプイィ・フュメ（右岸）が対岸に位置。石灰質土壌から生まれるハーブ・柑橘・ミネラル香の辛口白。",
+ chips:["ソーヴィニヨン・ブラン","石灰質","辛口","ミネラル"],map:null},
+
+{cat:"ロワール",en:"Vouvray",ja:"ヴーヴレ",
+ def:"ロワール・トゥーレーヌ地区のシュナン・ブラン（地元名：ピノー・ドラ・ロワール）のみで造るAOC。辛口から極甘口（VT、SGN）まで幅広いスタイル。スパークリングも製造。高い酸で長期熟成に向く。",
+ chips:["シュナン・ブラン","辛口〜甘口","長期熟成","スパークリング"],map:null},
+
+// ===== アルザス =====
+{cat:"アルザス",en:"Alsace",ja:"アルザス",
+ def:"フランス北東部・ドイツ国境のライン川沿い産地。ドイツ的気候だが辛口志向（例外：ヴァンダンジュ・タルディヴ/セレクション・グラン・ノーブル）。品種名をラベルに表示（フランス唯一）。細長い瓶（フルート型）が特徴。",
+ chips:["辛口","品種名表示","フルート瓶","ドイツ国境"],map:"france"},
+
+{cat:"アルザス",en:"Vendanges Tardives / SGN",ja:"ヴァンダンジュ・タルディヴ / セレクション・グラン・ノーブル",
+ def:"VT：遅摘み甘口。SGN（Sélection de Grains Nobles）：貴腐果を粒選りした最甘口。どちらもリースリング・ゲヴュルツトラミネール・ピノ・グリ・ミュスカのいずれかで造られる。",
+ chips:["遅摘み","貴腐","甘口","リースリング"],map:null},
+
+// ===== イタリア =====
+{cat:"イタリア",en:"Italy Overview",ja:"イタリアワイン概要",
+ def:"生産量・品質ともに世界トップレベル。DOCGが78、DOCが341と細かく規制。北部（ピエモンテ、ヴェネト）から南部（プーリア、シチリア）まで多様な品種・スタイル。固有品種の宝庫。",
+ chips:["DOCG","DOC","固有品種","南北多様"],map:"italy"},
+
+{cat:"イタリア",en:"Barolo",ja:"バローロ",
+ def:"ピエモンテ州・ランゲ丘陵のネッビオーロ100%の赤ワイン。「ワインの王」とも称される。重厚なタンニンと高い酸が特徴。DOCG。最低熟成期間：通常38ヶ月（うち樽18ヶ月）、リゼルヴァは62ヶ月。",
+ chips:["ネッビオーロ","ピエモンテ","王のワイン","長期熟成"],map:"italy"},
+
+{cat:"イタリア",en:"Barbaresco",ja:"バルバレスコ",
+ def:"バローロと同じネッビオーロ100%。バローロより少し優しくエレガントなスタイル（「女王のワイン」）。DOCG。最低熟成：26ヶ月（うち樽9ヶ月）。ガヤが世界的に名を広めた。",
+ chips:["ネッビオーロ","女王のワイン","ガヤ","エレガント"],map:null},
+
+{cat:"イタリア",en:"Chianti Classico",ja:"キャンティ・クラシコ",
+ def:"トスカーナ・フィレンツェとシエナの間の歴史的中心地区のサンジョヴェーゼ主体赤。DOCG。黒鶏（Gallo Nero）マークが品質の証。アンナータ、リゼルヴァ、グラン・セレツィオーネの3ランク。",
+ chips:["サンジョヴェーゼ","黒鶏","トスカーナ","DOCG"],map:null},
+
+{cat:"イタリア",en:"Brunello di Montalcino",ja:"ブルネッロ・ディ・モンタルチーノ",
+ def:"トスカーナ・モンタルチーノ村のサンジョヴェーゼ・グロッソ（ブルネッロ）100%。最長熟成義務（最低5年、うち樽2年）を持つイタリア最高峰の一つ。DOCG。",
+ chips:["サンジョヴェーゼ・グロッソ","5年熟成","モンタルチーノ","DOCG"],map:null},
+
+{cat:"イタリア",en:"Super Tuscans",ja:"スーパータスカン",
+ def:"DOC規則に縛られず、カベルネ・ソーヴィニヨンやメルロなどの国際品種をブレンドしたトスカーナの革新的ワイン群。当初はテーブルワイン扱いだったが品質で世界を席巻。サッシカイア、オルネッライア、ティニャネッロが代表。",
+ chips:["国際品種","規則外","サッシカイア","革新"],map:null},
+
+{cat:"イタリア",en:"Amarone della Valpolicella",ja:"アマローネ・デッラ・ヴァルポリチェッラ",
+ def:"ヴェネト州・ヴェローナ郊外のアパッシメント（陰干し）製法のワイン。コルヴィーナなどの黒ブドウを3〜4ヶ月乾燥させ糖度を凝縮。高アルコール（15〜17%）で凝縮した果実味。DOCG。",
+ chips:["アパッシメント","陰干し","コルヴィーナ","高アルコール"],map:null},
+
+{cat:"イタリア",en:"Prosecco",ja:"プロセッコ",
+ def:"ヴェネト州・フリウリのグレーラ種から造るイタリアのスパークリングワイン。シャルマ法（タンク内二次発酵）で製造。フレッシュな洋梨・白桃の香り。DOCとDOCGがある。世界最大のスパークリング輸出国。",
+ chips:["グレーラ","シャルマ法","フレッシュ","ヴェネト"],map:null},
+
+// ===== スペイン =====
+{cat:"スペイン",en:"Spain Overview",ja:"スペインワイン概要",
+ def:"生産面積は世界最大。DO/DOCa制度。主要産地：リオハ（DOCa）、リベラ・デル・ドゥエロ（DO）、プリオラート（DOCa）、ヘレス（シェリー）、カヴァ（スパークリング）、リアス・バイシャス。テンプラニーリョが主要品種。",
+ chips:["DOCa","テンプラニーリョ","リオハ","面積最大"],map:"spain"},
+
+{cat:"スペイン",en:"Rioja",ja:"リオハ",
+ def:"スペイン最名門産地（DOCa）。テンプラニーリョ主体にガルナッチャ等をブレンド。ラベル表示：Crianza（2年/うち樽1年）、Reserva（3年/うち樽1年）、Gran Reserva（5年/うち樽2年）。",
+ chips:["テンプラニーリョ","Crianza","Reserva","Gran Reserva"],map:null},
+
+{cat:"スペイン",en:"Sherry (Jerez)",ja:"シェリー（ヘレス）",
+ def:"スペイン南部アンダルシア・ヘレス・デ・ラ・フロンテーラのフォーティファイドワイン（酒精強化）。アルバリサ土壌でパロミノ種主体。種類：フィノ（辛口・フロール下）、マンサニーリャ、アモンティリャード、オロロソ、PX（極甘口）。",
+ chips:["フォーティファイド","フロール","ソレラシステム","フィノ"],map:null},
+
+{cat:"スペイン",en:"Cava",ja:"カヴァ",
+ def:"スペインの瓶内二次発酵スパークリングワイン（DO）。主にカタルーニャ州・ペネデス地区で生産。主要品種：マカベオ、チャレッロ、パレリャーダ。近年カヴァ・デ・パラヘ・カリフィカードが最上位格に。",
+ chips:["瓶内二次発酵","カタルーニャ","マカベオ","スペイン式"],map:null},
+
+// ===== ドイツ =====
+{cat:"ドイツ",en:"Germany Overview",ja:"ドイツワイン概要",
+ def:"高緯度（北緯47〜52度）の冷涼産地。リースリングが銘醸品種。Prädikatswein（プレディカーツワイン）制度が特徴的で収穫時の糖度（Oechsle度）で品質を分類。モーゼル・ラインガウ・ラインヘッセン・ファルツが主要産地。",
+ chips:["リースリング","冷涼","Prädikatswein","Oechsle"],map:"germany"},
+
+{cat:"ドイツ",en:"Prädikatswein",ja:"プレディカーツワイン",
+ def:"ドイツ最上位の品質カテゴリ。熟度順：Kabinett（カビネット）< Spätlese（シュペートレーゼ）< Auslese（アウスレーゼ）< Beerenauslese（BA）< Eiswein（アイスヴァイン）< Trockenbeerenauslese（TBA）。",
+ chips:["Kabinett","Spätlese","TBA","糖度順"],map:"pradikat"},
+
+{cat:"ドイツ",en:"Eiswein",ja:"アイスヴァイン",
+ def:"自然に氷結したブドウをそのまま圧搾して造る極甘口ワイン。水分が氷となり残り、糖分・酸・フレーバーが濃縮される。Beerenauslese相当の糖度が必要。カナダのアイスワインと同様の製法。",
+ chips:["氷結","濃縮","極甘口","TBAと同格以下"],map:null},
+
+{cat:"ドイツ",en:"Mosel",ja:"モーゼル",
+ def:"ドイツ北西部、モーゼル川・ザール川・ルーヴァー川流域の急斜面産地。スレート（板岩）土壌。リースリングの繊細・清澄・ミネラル感あふれるスタイル。アルコール低め（7〜9%）で軽い酸味が際立つ。",
+ chips:["スレート","急斜面","リースリング","低アルコール"],map:"germany"},
+
+// ===== ポルトガル =====
+{cat:"ポルトガル",en:"Port Wine",ja:"ポートワイン",
+ def:"ポルトガル・ドウロ渓谷の酒精強化ワイン。発酵中にブランデー（アグアルデンテ）を加え発酵を止め残糖を残す。種類：Ruby、Tawny、LBV（Late Bottled Vintage）、Vintage Port。ヴィラ・ノバ・デ・ガイアで熟成。",
+ chips:["ドウロ","酒精強化","Ruby","Tawny","Vintage"],map:null},
+
+{cat:"ポルトガル",en:"Madeira",ja:"マデイラ",
+ def:"大西洋のマデイラ島で造る酒精強化ワイン。独特のエストゥファ（加熱）製法で酸化熟成させる。種類：セルシアル（辛口）、ヴェルデーリョ、ブアル、マルムジー（甘口）。長命なワイン。",
+ chips:["エストゥファ","加熱熟成","酸化","マデイラ島"],map:null},
+
+{cat:"ポルトガル",en:"Vinho Verde",ja:"ヴィーニョ・ヴェルデ",
+ def:"ポルトガル北西部の若くフレッシュな白ワイン（「緑のワイン」）。低アルコール・高酸・微発泡が特徴。アルバリーニョ（スペイン名）＝アルヴァリーニョが最高品種。",
+ chips:["微発泡","低アルコール","アルバリーニョ","フレッシュ"],map:null},
+
+// ===== ハンガリー =====
+{cat:"東欧",en:"Tokaji Aszú",ja:"トカイ・アスー",
+ def:"ハンガリー・トカイ地方の貴腐甘口ワイン。フルミント主体。貴腐果粒（アスー）をプットニョシュ（puttonyos, 3〜6）単位で甘さを表す。世界三大貴腐ワインの一つ（ソーテルヌ、TBAと並ぶ）。",
+ chips:["フルミント","貴腐","プットニョシュ","世界三大"],map:null},
+
+// ===== 新世界 =====
+{cat:"新世界",en:"New World Overview",ja:"新世界ワイン概要",
+ def:"ヨーロッパ以外のワイン産地の総称。米国・オーストラリア・NZ・チリ・アルゼンチン・南アフリカ等。旧世界より品種名ラベル表示が多い。果実味豊か・新樽使用傾向。近年はテロワール志向も高まる。",
+ chips:["品種名表示","果実味","アメリカオーク","旧世界との対比"],map:"newworld"},
+
+{cat:"新世界",en:"Napa Valley",ja:"ナパ・ヴァレー",
+ def:"カリフォルニア州の高品質産地。カベルネ・ソーヴィニヨンで世界的名声を確立（1976年パリの審判）。主要AVA：オークヴィル、ラザフォード、スタッグス・リープ。価格が高くボルドースタイルに近い。",
+ chips:["CS","パリの審判","AVA","カリフォルニア"],map:null},
+
+{cat:"新世界",en:"1976 Judgement of Paris",ja:"パリスの審判（1976年）",
+ def:"ワインジャーナリスト・スティーブン・スパリュアが主催したブラインドテイスティング。カリフォルニアのワインがフランスの銘醸ワインを抑えて1位に。新世界ワインの実力を世界に知らしめた歴史的イベント。",
+ chips:["ブラインド","カリフォルニア","1976年","歴史的転換"],map:null},
+
+{cat:"新世界",en:"Marlborough Sauvignon Blanc",ja:"マールボロのソーヴィニヨン・ブラン",
+ def:"ニュージーランド・マールボロ地区のSB。グレープフルーツ・パッションフルーツ・ハーブの強烈なアロマ（メトキシピラジン）。冷涼な気候と強い紫外線が独特のスタイルを生む。クラウディ・ベイが世界的認知のきっかけ。",
+ chips:["NZ","冷涼","パッションフルーツ","クラウディ・ベイ"],map:null},
+
+{cat:"新世界",en:"Barossa Valley Shiraz",ja:"バロッサ・ヴァレーのシラーズ",
+ def:"オーストラリア・南オーストラリア州の暖かい盆地。高樹齢（100年超）のシラーズ（シラー）でチョコレート・ブラックベリーの濃厚スタイル。ペンフォールズ・グランジが世界的象徴。フィロキセラ未侵入の老樹が多い。",
+ chips:["シラーズ","老樹","ペンフォールズ","グランジ"],map:null},
+
+{cat:"新世界",en:"Malbec / Mendoza",ja:"マルベック / メンドーサ",
+ def:"アルゼンチンの看板品種。フランス・カオールが原産だが、アンデス山脈麓のメンドーサで本領発揮。高標高（600〜1400m）の乾燥地帯。プラム・チョコ・スミレの濃厚な果実感。近年は亜品種マルベック・シルクが評価。",
+ chips:["アルゼンチン","メンドーサ","高標高","プラム"],map:null},
+
+{cat:"新世界",en:"Carménère",ja:"カルメネール",
+ def:"チリの代表品種。フランス・ボルドー原産だが現在チリのみで大量生産（フィロキセラ禍で消滅しメルロと混同されていた）。緑ピーマン（ピラジン）のアロマが特徴的。チリのアイデンティティ品種。",
+ chips:["チリ","ボルドー起源","ピーマン香","メルロと混同"],map:null},
+
+// ===== 品種 =====
+{cat:"ブドウ品種",en:"Cabernet Sauvignon",ja:"カベルネ・ソーヴィニヨン",
+ def:"世界で最も広く栽培される黒ブドウ。フランス・ボルドー左岸が本拠地（CS×SB交配が起源）。高タンニン・高酸・カシス・ブラックチェリー・ハーブのアロマ。長熟型。セカンダリー：シダー・タバコ・鉛筆の芯。",
+ chips:["高タンニン","長熟","カシス","ボルドー左岸"],map:null},
+
+{cat:"ブドウ品種",en:"Pinot Noir",ja:"ピノ・ノワール",
+ def:"ブルゴーニュ・コート・ドール最高の黒ブドウ。薄皮でタンニン低め。チェリー・ラズベリー・バラのアロマ。気難しく栽培困難。ブルゴーニュのほかオレゴン、ニュージーランド、ドイツ（シュペートブルグンダー）でも成功。",
+ chips:["薄皮","低タンニン","チェリー","難しい品種"],map:null},
+
+{cat:"ブドウ品種",en:"Syrah / Shiraz",ja:"シラー / シラーズ",
+ def:"フランス（北ローヌ）ではSyrah、オーストラリアではShiraz。元来コート・デュ・ローヌ原産。胡椒・ブラックベリー・スミレのアロマ。北ローヌは優雅、バロッサは濃厚。温暖地では高アルコールになる。",
+ chips:["北ローヌ","バロッサ","胡椒","スミレ"],map:null},
+
+{cat:"ブドウ品種",en:"Chardonnay",ja:"シャルドネ",
+ def:"世界最も栽培される白ブドウ。ブルゴーニュ（コート・ド・ボーヌ、シャブリ）が本拠地。中性的な品種でテロワールと醸造（MLF・樽発酵）の影響を強く受ける。スタイルの幅が最も広い。シャンパーニュにも必須。",
+ chips:["中性的","テロワール反映","MLF","樽発酵"],map:null},
+
+{cat:"ブドウ品種",en:"Riesling",ja:"リースリング",
+ def:"ドイツ・アルザスを代表する白ブドウ。高酸・低アルコール・糖分保持。石油・ペトロール香（TDN）がセカンダリーとして現れる。辛口から極甘口まで幅広いスタイル。長期熟成で真価を発揮。",
+ chips:["高酸","ペトロール香","TDN","長期熟成"],map:null},
+
+{cat:"ブドウ品種",en:"Sauvignon Blanc",ja:"ソーヴィニヨン・ブラン",
+ def:"ロワール（サンセール、プイィ・フュメ）とボルドー白のブドウ。グレープフルーツ・ハーブ（メトキシピラジン）・猫のおしっこのアロマ（セミヨン混醸でリッチさが増す）。NZマールボロで現代的スタイルを確立。",
+ chips:["メトキシピラジン","ハーブ","ロワール","NZ"],map:null},
+
+{cat:"ブドウ品種",en:"Nebbiolo",ja:"ネッビオーロ",
+ def:"イタリア・ピエモンテ固有の最高峰黒ブドウ。バローロ・バルバレスコの主要品種。高タンニン・高酸・低色素。スミレ・タール・バラ・トリュフのアロマ。地元以外での栽培は困難。",
+ chips:["ピエモンテ","バローロ","高タンニン高酸","スミレ"],map:null},
+
+{cat:"ブドウ品種",en:"Sangiovese",ja:"サンジョヴェーゼ",
+ def:"イタリア最多栽培の黒ブドウ。地域ごとに異なる別名（キャンティ→サンジョヴェーゼ・グロッソ＝ブルネッロ、ヴィーノ・ノービレ→プルニョーロ・ジェンティーレ）。チェリー・土・タバコ。高酸・中タンニン。",
+ chips:["トスカーナ","ブルネッロ","高酸","地方別名"],map:null},
+
+{cat:"ブドウ品種",en:"Chenin Blanc",ja:"シュナン・ブラン",
+ def:"ロワール・アンジュー＆トゥーレーヌの白ブドウ。極辛口から貴腐甘口まで幅広い。クインスと蜂蜜のアロマ。南アフリカで「Steen」と呼ばれ最多栽培品種。高い酸で長期熟成に優れる。",
+ chips:["ロワール","南アフリカ","長期熟成","幅広いスタイル"],map:null},
+
+{cat:"ブドウ品種",en:"Gewurztraminer",ja:"ゲヴュルツトラミネール",
+ def:"アルザス最個性的な白ブドウ（Gewürz＝スパイスの意）。ライチ・バラ・ジンジャーの強烈なアロマ。低酸・高アルコール・オイリーなテクスチャー。VT・SGNでも造られる。",
+ chips:["ライチ","バラ","低酸","アルザス"],map:null},
+
+{cat:"ブドウ品種",en:"Grenache / Garnacha",ja:"グルナッシュ / ガルナッチャ",
+ def:"スペイン北東部原産。南フランス（南ローヌ、ラングドック）・スペイン（リオハ）で広く栽培。赤果実・白胡椒・甘草のアロマ。高アルコール・低タンニン・酸化しやすい。GSMブレンドの主役。",
+ chips:["南ローヌ","スペイン","高アルコール","酸化","GSM"],map:null},
+
+{cat:"ブドウ品種",en:"Viognier",ja:"ヴィオニエ",
+ def:"北ローヌ（コンドリュー・コート・ロティ）が本拠地の白ブドウ。アプリコット・桃・ジャスミンの強いアロマ。18世紀にはほぼ絶滅寸前だったが復活。コート・ロティではシラーに5〜20%混醸が認められる。",
+ chips:["アプリコット","ジャスミン","コンドリュー","北ローヌ"],map:null},
+
+// ===== ワイン製造・テロワール =====
+{cat:"醸造・テロワール",en:"Terroir",ja:"テロワール",
+ def:"ブドウ畑の自然環境要素（土壌・地形・気候・標高・日照等）の総体。同じ品種・醸造でも産地が違えば異なる個性が現れるという概念。フランスのワイン文化の根幹。",
+ chips:["土壌","気候","地形","フランス的概念"],map:null},
+
+{cat:"醸造・テロワール",en:"Malolactic Fermentation (MLF)",ja:"マロラクティック発酵（乳酸発酵）",
+ def:"リンゴ酸（malic acid）を乳酸（lactic acid）に変換する細菌（乳酸菌）による二次発酵。酸が柔らかくなりバターのようなクリーミーさが生まれる（ダイアセチル）。多くの赤ワインと樽熟成白で行われる。",
+ chips:["リンゴ酸→乳酸","酸の軟化","バター","乳酸菌"],map:null},
+
+{cat:"醸造・テロワール",en:"Phylloxera",ja:"フィロキセラ",
+ def:"19世紀後半に欧州を壊滅させたブドウ根アブラムシ（Dactylosphaera vitifoliae）。北米原産で免疫のある北米系台木への接木で解決。砂地（マデイラ、コルナス、シャンパーニュ一部）はフィロキセラが生息できず接木不要。",
+ chips:["根アブラムシ","台木接木","欧州壊滅","砂地は免疫"],map:null},
+
+{cat:"醸造・テロワール",en:"Botrytis cinerea",ja:"ボトリティス・シネレア（貴腐菌）",
+ def:"灰色カビ菌の一種。朝の霧と午後の乾燥が交互に来る条件で「貴腐（Noble Rot）」として糖・酸・グリセロールを凝縮。ソーテルヌ・トカイ・ドイツBA/TBAで使用。条件が悪いと「灰色かび病」となり有害。",
+ chips:["貴腐","グリセロール","凝縮","ソーテルヌ"],map:null},
+
+{cat:"醸造・テロワール",en:"Oak Aging",ja:"樽熟成（オーク樽）",
+ def:"フランスオーク（細かい木目・バニラ・スパイス）とアメリカンオーク（粗い・ヴァニラ・ヤシの実・ディル）で風味が異なる。新樽比率が高いほど木の香りが強く出る。樽は大きいほど接触面積が少なく影響が小さい。",
+ chips:["フレンチオーク","アメリカンオーク","バニラ","タンニン抽出"],map:null},
+
+{cat:"醸造・テロワール",en:"Maceration",ja:"マセレーション（浸漬）",
+ def:"発酵中または前後に果皮・種子・茎をジュースや酒と接触させる工程。色素（アントシアニン）・タンニン・アロマを抽出する。コールドマセレーション（発酵前冷浸漬）は色素・アロマを低温で優しく抽出する技法。",
+ chips:["色素抽出","タンニン","浸漬時間","コールドマセレーション"],map:null},
+
+{cat:"醸造・テロワール",en:"Solera System",ja:"ソレラシステム",
+ def:"シェリー・マデイラなどで使われる分数ブレンド熟成システム。複数段の樽（スケール）に新旧のワインを層状に重ね、最古の樽（ソレラ）から一定量を出荷し、上段（クリアデラ）から補充する。複数年の品質を均一化。",
+ chips:["シェリー","分数ブレンド","スケール","クリアデラ"],map:null},
+
+{cat:"醸造・テロワール",en:"Appellation System (AOC/DO/DOC)",ja:"原産地呼称制度",
+ def:"フランスAOC/AOP、イタリアDOC/DOCG、スペインDO/DOCa、ドイツQbAなど。ブドウ産地・品種・醸造法・収量などを法律で規制する制度。欧州発祥でEU統一ラベル（AOP/IGP）へ移行中。",
+ chips:["AOC","DOCG","DO","法規制"],map:null},
+
+// ===== テイスティング =====
+{cat:"テイスティング",en:"Wine Tasting (外観・香り・味わい)",ja:"ワインテイスティングの3要素",
+ def:"①外観（色・透明度・粘性）②香り（第一アロマ＝品種由来、第二アロマ＝発酵由来、第三アロマ/ブーケ＝熟成由来）③味わい（甘味・酸味・タンニン・アルコール・ボディ・余韻）。JSA/WSTの標準手順に従う。",
+ chips:["外観","アロマ","ブーケ","余韻"],map:null},
+
+{cat:"テイスティング",en:"Tanin (Tannin)",ja:"タンニン",
+ def:"ブドウの果皮・種子・茎・樽由来のポリフェノール。収れん性（口の中が乾く感覚）をもたらす。赤ワインの骨格と熟成ポテンシャルに関係。高タンニン品種：CS、ネッビオーロ、タナ。低タンニン：ピノ・ノワール。",
+ chips:["収れん性","ポリフェノール","骨格","熟成"],map:null},
+
+{cat:"テイスティング",en:"Legs / Tears (Glycerol)",ja:"脚・涙（グリセロール）",
+ def:"ワインをグラスで回した後、ガラス面を流れ落ちる筋。アルコールと糖（グリセロール）の表面張力の差で生じる（マランゴニ効果）。「品質指標」とする俗説もあるが、実際は主にアルコール度数と残糖の影響。",
+ chips:["マランゴニ効果","グリセロール","アルコール","表面張力"],map:null},
+
+{cat:"テイスティング",en:"Decanting",ja:"デカンタージュ",
+ def:"①澱（オールドヴィンテージ）の除去②若いワインの空気接触（開き促進）の2目的で行う。古酒は澱がボトル底に残るようゆっくり注ぐ。若い赤（バローロ等）は1〜2時間前に行うと香りが開く。",
+ chips:["澱除去","開き促進","オールドヴィンテージ","若い赤"],map:null},
+
+{cat:"テイスティング",en:"Serving Temperature",ja:"適切なサービス温度",
+ def:"スパークリング・甘口白：6〜8℃、辛口白・ロゼ：8〜12℃、軽い赤：12〜14℃、フルボディ赤：16〜18℃。赤の飲み頃は「室温」と言われるが、日本の夏室温では高すぎることも多い。",
+ chips:["スパークリング6〜8℃","白8〜12℃","赤16〜18℃","適温"],map:null},
+
+{cat:"テイスティング",en:"Wine Faults",ja:"ワインの欠陥",
+ def:"①コルクブショネ（TCA汚染・カビ臭）②酸化（酢酸・アセトアルデヒド）③還元臭（硫黄・マッチ）④揮発酸（酢酸過多）⑤ブレタノミセス（馬小屋・ばんそうこう臭）が主要欠陥。",
+ chips:["コルクブショネ","TCA","酸化","ブレタノミセス"],map:null},
+
+// ===== 格付け・制度 =====
+{cat:"格付け・制度",en:"AOC (Appellation d'Origine Contrôlée)",ja:"AOC（原産地呼称統制）",
+ def:"フランスの原産地呼称制度。産地・品種・栽培・醸造方法を厳格に規制。現在はEU統一表記のAOP（Appellation d'Origine Protégée）と同義。INAOが管理。フランスには300以上のAOCが存在する。",
+ chips:["INAO","AOP","品種規制","産地規制"],map:null},
+
+{cat:"格付け・制度",en:"DOCG (Italy)",ja:"DOCG（イタリア）",
+ def:"Denominazione di Origine Controllata e Garantitaの略。イタリア最高位の原産地呼称。DOCより厳しい規制（収量制限・試飲委員会審査・必ずボトル詰め）。現在78のDOCGが存在。",
+ chips:["最高位","試飲審査","ガランティータ","78DOCG"],map:null},
+
+{cat:"格付け・制度",en:"VDP (Germany)",ja:"VDP（ドイツ）",
+ def:"Verband Deutscher Prädikatsweingüterの略。ドイツ優良生産者協会。独自の畑格付け（グローセス・ゲヴェックス＝GG最高位、エアステス・ゲヴェックス）を制定。ラベルに鷲マークが目印。",
+ chips:["優良生産者協会","GG","鷲マーク","畑格付け"],map:null},
+
+{cat:"格付け・制度",en:"Biodynamic Wine",ja:"ビオダナミ（バイオダイナミック）農法",
+ def:"ルドルフ・シュタイナーの農業思想に基づく有機農法の発展形。月の満ち欠けや天体の動きに合わせた農作業、特殊な調合剤の使用が特徴。Demeter認証。コント・ルフレーヴ、ジャン・クロード・ラトー等が実践。",
+ chips:["シュタイナー","Demeter","月の暦","有機農法"],map:null},
+
+{cat:"格付け・制度",en:"Champagne Houses (Maisons)",ja:"シャンパーニュメゾン（大手)",
+ def:"大手：モエ＆シャンドン（最大）、ヴーヴ・クリコ、ポメリー、ランソン、ニコラ・フィアット。高級：クリュッグ、サロン、ジャック・セロス（レコルタン）。NMはネゴシアン・マニピュラン（ブドウ購入）、RMは自社畑のみ。",
+ chips:["NM","RM","レコルタン","メゾン"],map:null},
+];
+
+// ============================================================
+// APP
+// ============================================================
+const cats = ["すべて", ...Array.from(new Set(ALL_CARDS.map(c=>c.cat)))];
+let activeCat="すべて", learnedIds=new Set(), deck=[], deckPos=0, isFlipped=false;
+
+window.onload=()=>{
+  buildCatBtns();
+  buildDeck();
+  renderCard();
+};
+
+function buildCatBtns(){
+  const wrap=document.getElementById("cat-scroll");
+  cats.forEach(cat=>{
+    const btn=document.createElement("button");
+    btn.className="cat-btn"+(cat===activeCat?" active":"");
+    const n=cat==="すべて"?ALL_CARDS.length:ALL_CARDS.filter(c=>c.cat===cat).length;
+    btn.textContent=`${cat} (${n})`;
+    btn.onclick=()=>selectCat(cat);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectCat(cat){
+  activeCat=cat;
+  document.querySelectorAll(".cat-btn").forEach((b,i)=>b.classList.toggle("active",cats[i]===cat));
+  buildDeck(); renderCard();
+}
+
+function buildDeck(){
+  deck=ALL_CARDS.map((_,i)=>i)
+    .filter(i=>activeCat==="すべて"||ALL_CARDS[i].cat===activeCat)
+    .filter(i=>!learnedIds.has(i));
+  deckPos=0;
+}
+
+function renderCard(){
+  const learnedN=activeCat==="すべて"?learnedIds.size:Array.from(learnedIds).filter(i=>ALL_CARDS[i].cat===activeCat).length;
+  const totalN=activeCat==="すべて"?ALL_CARDS.length:ALL_CARDS.filter(c=>c.cat===activeCat).length;
+  document.getElementById("learned-badge").textContent=`覚えた ${learnedN}枚`;
+  document.getElementById("pos-rem").textContent=deck.length;
+
+  const done=document.getElementById("completed-state");
+  const wrap=document.getElementById("flip-wrap");
+  const nav=document.querySelector(".nav-controls");
+  const kbdHint=document.querySelector(".kbd-hint");
+
+  if(deck.length===0){
+    wrap.style.display="none"; done.style.display="block";
+    nav.style.display="none"; kbdHint.style.display="none";
+    document.getElementById("completed-msg").textContent=
+      `${activeCat==="すべて"?"全カテゴリ":activeCat}の全${totalN}枚を覚えました！🥂`;
+    updProg(totalN,totalN); return;
+  }
+  wrap.style.display=""; done.style.display="none";
+  nav.style.display="flex"; kbdHint.style.display="";
+
+  const idx=deck[deckPos]; const c=ALL_CARDS[idx];
+  document.getElementById("pos-cur").textContent=deckPos+1;
+  document.getElementById("pos-tot").textContent=deck.length;
+  document.getElementById("front-cat").textContent=c.cat;
+  document.getElementById("front-en").textContent=c.en;
+  document.getElementById("front-ja").textContent=c.ja;
+  document.getElementById("back-def").textContent=c.def;
+
+  const chips=document.getElementById("back-chips");
+  chips.innerHTML="";
+  (c.chips||[]).forEach(ch=>{
+    const s=document.createElement("span");
+    s.className="kw-chip"; s.textContent=ch; chips.appendChild(s);
+  });
+
+  const mapEl=document.getElementById("back-map");
+  mapEl.innerHTML=c.map&&SVG[c.map]?SVG[c.map]:"";
+  mapEl.style.display=c.map&&SVG[c.map]?"flex":"none";
+
+  document.getElementById("btn-prev").disabled=deckPos===0;
+  document.getElementById("btn-next").disabled=deckPos===deck.length-1;
+
+  if(isFlipped)flipCard();
+  updProg(learnedN,totalN);
+}
+
+function updProg(l,t){
+  document.getElementById("prog-fill").style.width=(t===0?100:Math.round(l/t*100))+"%";
+}
+
+function flipCard(){
+  isFlipped=!isFlipped;
+  document.getElementById("flip-inner").classList.toggle("flipped",isFlipped);
+}
+
+function navigate(d){
+  const np=deckPos+d;
+  if(np<0||np>=deck.length)return;
+  deckPos=np; isFlipped=false; renderCard();
+}
+
+function markLearned(){
+  if(!deck.length)return;
+  learnedIds.add(deck[deckPos]);
+  deck.splice(deckPos,1);
+  if(deckPos>=deck.length)deckPos=Math.max(0,deck.length-1);
+  isFlipped=false; renderCard();
+}
+
+function shuffleDeck(){
+  for(let i=deck.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]]=[deck[j],deck[i]];
+  }
+  deckPos=0; isFlipped=false; renderCard();
+}
+
+function resetAll(){
+  const toReset=activeCat==="すべて"?[...Array(ALL_CARDS.length).keys()]:ALL_CARDS.map((_,i)=>i).filter(i=>ALL_CARDS[i].cat===activeCat);
+  toReset.forEach(i=>learnedIds.delete(i));
+  buildDeck(); isFlipped=false; renderCard();
+}
+
+function resetLearned(){
+  learnedIds.clear(); buildDeck(); isFlipped=false; renderCard();
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
+  if(e.key==="ArrowRight"||e.key==="l"){navigate(1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="h"){navigate(-1);e.preventDefault();}
+  else if(e.key===" "){flipCard();e.preventDefault();}
+  else if(e.key==="Enter"){markLearned();e.preventDefault();}
+  else if(e.key==="r"||e.key==="R")resetAll();
+  else if(e.key==="s"||e.key==="S")shuffleDeck();
+});
+</script>
+</body>
+</html>
