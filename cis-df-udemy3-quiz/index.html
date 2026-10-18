@@ -1132,7 +1132,19 @@ function showScreen(id) {
 function showStart() { showScreen('start-screen'); }
 
 function startQuiz() {
-  shuffledQuestions = shuffle(questions).slice(0, QUIZ_SIZE);
+  const picked = shuffle(questions).slice(0, QUIZ_SIZE);
+  shuffledQuestions = picked.map(q => {
+    const order = shuffle([0, 1, 2, 3]);
+    const shuffledOptions = order.map(i => q.options[i]);
+    let shuffledAnswer;
+    if (Array.isArray(q.answer)) {
+      const origSet = new Set(q.answer);
+      shuffledAnswer = order.map((origIdx, newIdx) => origSet.has(origIdx) ? newIdx : -1).filter(i => i !== -1);
+    } else {
+      shuffledAnswer = order.indexOf(q.answer);
+    }
+    return { ...q, options: shuffledOptions, answer: shuffledAnswer };
+  });
   currentIndex = 0;
   userAnswers = {};
   showScreen('quiz-screen');
